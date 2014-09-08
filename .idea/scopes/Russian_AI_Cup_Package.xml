@@ -1,0 +1,3 @@
+<component name="DependencyValidationManager">
+  <scope name="Russian AI Cup Package" pattern="file[model]:*/||file[runner]:*/" />
+</component>
