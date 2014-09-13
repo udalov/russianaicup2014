@@ -6,8 +6,12 @@ import model.World;
 import java.util.ArrayList;
 import java.util.List;
 
-public final class MyStrategy implements Strategy {
+public class MyStrategy implements Strategy {
     private static final List<Team> TEAMS = new ArrayList<>(2);
+
+    static {
+        new Debug();
+    }
 
     @Override
     public void move(@NotNull Hockeyist self, @NotNull World world, @NotNull Game game, @NotNull Move move) {
@@ -26,6 +30,8 @@ public final class MyStrategy implements Strategy {
         move.setTeammateIndex(result.action.teammateIndex);
         move.setSpeedUp(result.direction.speedup);
         move.setTurn(result.direction.turn);
+
+        Debug.update(world);
     }
 
     @Nullable

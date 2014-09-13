@@ -46,7 +46,7 @@ fun runGame(vis: Boolean, ticks: Int, seed: Long, players: List<Player>) {
     for (player in players) {
         if (player == MyStrategy) {
             threads add Thread {
-                Thread.currentThread().setName("local")
+                Thread.currentThread().setName(if (vis) "local-vis" else "local")
                 runMyStrategy(31001)
             }
             break
@@ -85,6 +85,7 @@ fun main(args: Array<String>) {
         else -> error("nice try: $s")
     }
     if (args.size < 3) error("nice try: ${Arrays.toString(args)}")
-    runGame("-vis" in args, args[2].toInt(), args[3].toLong(), listOf(player(args[0]), player(args[1])))
+    val players = listOf(player(args[0]), player(args[1]))
+    runGame("-vis" in args || KeyboardPlayer in players, args[2].toInt(), args[3].toLong(), players)
     println(File(LOG_FILE).readText())
 }
