@@ -1,8 +1,8 @@
 package runner
 
-import java.net.ConnectException
 import java.util.ArrayList
 import org.apache.log4j.Logger
+import java.lang.reflect.InvocationTargetException
 
 val LOG_FILE = "out/log.txt"
 
@@ -56,15 +56,15 @@ fun runGame(vis: Boolean, seed: Long, players: List<Player>) {
 }
 
 fun runMyStrategy(port: Long) {
+    val main = Class.forName("Runner").getDeclaredMethod("main", javaClass<Array<String>>())
     while (true) {
         try {
-            val main = Class.forName("Runner").getDeclaredMethod("main", javaClass<Array<String>>())
             main(null, array("127.0.0.1", "$port", "0000000000000000"))
-        } catch (e: ConnectException) {
-            if (e.getMessage()?.startsWith("Connection refused") ?: false) {
+        } catch (e: InvocationTargetException) {
+            if (e.getTargetException()?.getMessage()?.startsWith("Connection refused") ?: false) {
                 Thread.sleep(40)
                 continue
-            } else throw e
+            } else throw e.getTargetException() ?: e
         }
         break
     }
