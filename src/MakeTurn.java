@@ -2,14 +2,14 @@ import model.Game;
 import model.Hockeyist;
 import model.World;
 
-import static java.lang.StrictMath.PI;
-
 public class MakeTurn {
+    private final Team team;
     private final Hockeyist self;
     private final World world;
     private final Game game;
 
-    public MakeTurn(@NotNull Hockeyist self, @NotNull World world, @NotNull Game game) {
+    public MakeTurn(@NotNull Team team, @NotNull Hockeyist self, @NotNull World world, @NotNull Game game) {
+        this.team = team;
         this.self = self;
         this.world = world;
         this.game = game;
@@ -27,6 +27,18 @@ public class MakeTurn {
 
     @NotNull
     public Result makeTurn() {
-        return new Result(Do.STRIKE, Go.go(-1.0, PI));
+        Decision decision = team.getDecision(self.getId());
+        Decision.Role role = decision.role;
+
+        if (role == Decision.Role.DEFENSE) {
+            Point target = decision.defensePoint;
+            if (target.sqrDist(self) > 4000) {
+                return new Result(Do.STRIKE, Go.go(1, self.getAngleTo(target.x, target.y)));
+            }
+            return new Result(Do.STRIKE, Go.go(0, self.getAngleTo(world.getPuck())));
+        }
+        else {
+            return new Result(Do.STRIKE, Go.go(1, 0));
+        }
     }
 }
