@@ -27,4 +27,9 @@ public class Puck extends Unit {
     public long getOwnerPlayerId() {
         return ownerPlayerId;
     }
+
+    @Override
+    public String toString() {
+        return String.format("(%.3f, %.3f)", getX(), getY());
+    }
 }

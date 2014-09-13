@@ -750,4 +750,9 @@ public class Game {
     public double getPuckBindingRange() {
         return puckBindingRange;
     }
+
+    @Override
+    public String toString() {
+        return "Game (seed = " + randomSeed + ", ticks = " + tickCount + ")";
+    }
 }

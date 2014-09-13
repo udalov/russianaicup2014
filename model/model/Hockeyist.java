@@ -170,4 +170,13 @@ public class Hockeyist extends Unit {
     public Integer getLastActionTick() {
         return lastActionTick;
     }
+
+    @Override
+    public String toString() {
+        String result = getTeammateIndex() + " " + (isTeammate() ? "my " : "enemy ") + getState() + " " + getType();
+        if (getRemainingKnockdownTicks() > 0) result += " (" + getRemainingKnockdownTicks() + " knockdown)";
+        if (getRemainingCooldownTicks() > 0) result += " (" + getRemainingCooldownTicks() + " cooldown)";
+        if (getSwingTicks() > 0) result += " (" + getSwingTicks() + " swing)";
+        return result + " at " + String.format("(%.3f, %.3f)", getX(), getY());
+    }
 }

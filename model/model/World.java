@@ -105,4 +105,9 @@ public class World {
 
         return null;
     }
+
+    @Override
+    public String toString() {
+        return "tick #" + tick;
+    }
 }

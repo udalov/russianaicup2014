@@ -115,4 +115,16 @@ public class Move {
     public void setTeammateIndex(int teammateIndex) {
         this.teammateIndex = teammateIndex;
     }
+
+    @Override
+    public String toString() {
+        switch (action) {
+            case PASS:
+                return action + " " + getPassPower() + " at angle " + getPassAngle();
+            case SUBSTITUTE:
+                return action + " " + getTeammateIndex();
+            default:
+                return action.toString();
+        }
+    }
 }

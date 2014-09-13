@@ -142,4 +142,9 @@ public class Player {
     public boolean isJustMissedGoal() {
         return justMissedGoal;
     }
+
+    @Override
+    public String toString() {
+        return (me ? "me" : "enemy") + " (" + getGoalCount() + " goals)";
+    }
 }
