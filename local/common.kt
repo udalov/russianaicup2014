@@ -58,7 +58,8 @@ fun runGame(vis: Boolean, seed: Long, players: List<Player>) {
 fun runMyStrategy(port: Long) {
     while (true) {
         try {
-            Runner.main(array("127.0.0.1", "$port", "0000000000000000"))
+            val main = Class.forName("Runner").getDeclaredMethod("main", javaClass<Array<String>>())
+            main(null, array("127.0.0.1", "$port", "0000000000000000"))
         } catch (e: ConnectException) {
             if (e.getMessage()?.startsWith("Connection refused") ?: false) {
                 Thread.sleep(40)
