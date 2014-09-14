@@ -1,6 +1,4 @@
-import model.Game;
-import model.Hockeyist;
-import model.World;
+import model.*;
 
 import static java.lang.StrictMath.PI;
 
@@ -11,6 +9,7 @@ public class MakeTurn {
     private final Game game;
 
     private final Point me;
+    private final Puck puck;
 
     public MakeTurn(@NotNull Team team, @NotNull Hockeyist self, @NotNull World world, @NotNull Game game) {
         this.team = team;
@@ -19,6 +18,7 @@ public class MakeTurn {
         this.game = game;
 
         this.me = Point.of(self);
+        this.puck = world.getPuck();
     }
 
     public static class Result {
@@ -39,16 +39,32 @@ public class MakeTurn {
         if (role == Decision.Role.DEFENSE) {
             Point target = decision.defensePoint;
             if (target.sqrDist(self) > 1000) {
-                return new Result(Do.NONE /* TODO: catch puck if possible */, land(target));
+                return new Result(tryPreventPuckFromGoingToGoal(), land(target));
             }
             Point strikeTarget = whereEnemyWillStrike();
-            Line strikeLine = Line.between(Point.of(world.getPuck()), strikeTarget);
+            Line strikeLine = Line.between(Point.of(puck), strikeTarget);
             Point catchAt = strikeLine.at(me.x);
             // TODO: consider some average between this direction and the puck
-            return new Result(Do.STRIKE, Go.go(0, self.getAngleTo(catchAt.x, catchAt.y)));
+            return new Result(tryPreventPuckFromGoingToGoal(), Go.go(0, self.getAngleTo(catchAt.x, catchAt.y)));
         } else {
             return new Result(Do.STRIKE, Go.go(0, 0));
         }
+    }
+
+    @NotNull
+    private Do tryPreventPuckFromGoingToGoal() {
+        if (self.getRemainingCooldownTicks() > 0) return Do.NONE;
+        if (isPuckReachable()) {
+            // TODO: something more clever, also take attributes into account
+            return speed(puck) < 17 ? Do.TAKE_PUCK : Do.STRIKE;
+        }
+        return Do.NONE;
+    }
+
+    private boolean isPuckReachable() {
+        double angle = self.getAngleTo(puck);
+        return self.getDistanceTo(puck) <= game.getStickLength() &&
+               -game.getStickSector() / 2 <= angle && angle <= game.getStickSector() / 2;
     }
 
     @NotNull
@@ -56,7 +72,7 @@ public class MakeTurn {
         double x = team.areWeOnTheLeft
                    ? game.getRinkLeft() - game.getGoalNetWidth() / 2
                    : game.getRinkRight() + game.getGoalNetWidth() / 2;
-        double y = world.getPuck().getY() < (game.getRinkTop() + game.getRinkBottom()) / 2
+        double y = puck.getY() < (game.getRinkTop() + game.getRinkBottom()) / 2
                    ? game.getGoalNetTop()
                    : game.getGoalNetTop() + game.getGoalNetHeight();
         return Point.of(x, y);
@@ -65,7 +81,7 @@ public class MakeTurn {
     @NotNull
     private Go land(@NotNull Point target) {
         double alpha = self.getAngleTo(target.x, target.y);
-        double speed = Math.hypot(self.getSpeedX(), self.getSpeedY());
+        double speed = speed(self);
         double distance = self.getDistanceTo(target.x, target.y);
         // TODO: consider raising this value to make defenders move back more frequently
         if (alpha > PI / 2 || alpha < -PI / 2) {
@@ -73,5 +89,9 @@ public class MakeTurn {
         } else {
             return Go.go(distance < speed * speed / 2 ? -1 : 1, alpha);
         }
+    }
+
+    private static double speed(@NotNull Unit unit) {
+        return Math.hypot(unit.getSpeedX(), unit.getSpeedY());
     }
 }
