@@ -1,4 +1,6 @@
 import model.Hockeyist;
+import model.Puck;
+import model.Unit;
 import model.World;
 
 import javax.swing.*;
@@ -10,7 +12,7 @@ import java.util.Comparator;
 public class Debug {
     public static final boolean ENABLED = Thread.currentThread().getName().equals("local-vis");
 
-    private static final JTextArea TEXT_AREA;
+    private static final JTextPane TEXT_AREA;
 
     static {
         if (ENABLED) {
@@ -20,9 +22,8 @@ public class Debug {
             window.setLocation(1060, 80);
             window.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
-            TEXT_AREA = new JTextArea();
-            TEXT_AREA.setFont(new Font("Consolas", Font.PLAIN, 10));
-            TEXT_AREA.setFont(new Font("Menlo", Font.PLAIN, 10));
+            TEXT_AREA = new JTextPane();
+            TEXT_AREA.setContentType("text/html");
 
             window.add(TEXT_AREA);
             EventQueue.invokeLater(new Runnable() {
@@ -53,28 +54,62 @@ public class Debug {
             }
         });
 
-        StringBuilder sb = new StringBuilder();
-        for (Hockeyist hockeyist : hockeyists) {
-            sb.append(hockeyist.toString());
-            sb.append("\n");
-            sb.append("speed (");
-            sb.append(format(hockeyist.getSpeedX()));
-            sb.append(", ");
-            sb.append(format(hockeyist.getSpeedY()));
-            sb.append("\n");
-            sb.append("angle ");
-            sb.append(format(hockeyist.getAngle()));
-            sb.append("\n");
-            sb.append("angular speed ");
-            sb.append(format(hockeyist.getAngularSpeed()));
-            sb.append("\n");
-            sb.append("\n");
+        class DebugTextBuilder {
+            private final StringBuilder sb = new StringBuilder();
+
+            {
+                sb.append("<div style='font-family: Menlo, Consolas; font-size: 10'>");
+            }
+
+            void str(@NotNull String s) {
+                sb.append(s);
+                newLine();
+            }
+
+            void color(@NotNull String color) {
+                sb.append("<div style='color: #").append(color).append("'>");
+            }
+
+            void endColor() {
+                sb.append("</div>");
+            }
+
+            @NotNull
+            private String format(double value) {
+                return String.format("%.3f", value);
+            }
+
+            void unit(@NotNull Unit unit) {
+                double vx = unit.getSpeedX();
+                double vy = unit.getSpeedY();
+                str("speed (" + format(vx) + ", " + format(vy) + ") value " + format(Math.hypot(vx, vy)));
+                str("angle " + format(unit.getAngle()) + ", speed " + format(unit.getAngularSpeed()));
+            }
+
+            void newLine() {
+                sb.append("<br/>");
+            }
+
+            @Override
+            public String toString() {
+                return sb.toString() + "</div>";
+            }
         }
 
-        TEXT_AREA.setText(sb.toString());
-    }
+        DebugTextBuilder b = new DebugTextBuilder();
 
-    private static String format(double x) {
-        return String.format("%.3f", x);
+        Puck puck = world.getPuck();
+        b.str("puck at " + puck);
+        b.unit(puck);
+        b.newLine();
+        for (Hockeyist hockeyist : hockeyists) {
+            b.color(hockeyist.isTeammate() ? "007700" : "770000");
+            b.str(hockeyist.toString());
+            b.endColor();
+            b.unit(hockeyist);
+            b.newLine();
+        }
+
+        TEXT_AREA.setText(b.toString());
     }
 }
