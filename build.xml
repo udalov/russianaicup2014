@@ -1,0 +1,20 @@
+<project name="russianaicup" default="compile">
+    <property name="dist" value="dist"/>
+
+    <target name="clean">
+        <delete dir="${dist}/classes"/>
+        <mkdir dir="${dist}/classes"/>
+    </target>
+
+    <target name="src" depends="clean">
+        <zip basedir="src" destfile="${dist}/solution.zip" excludes="src.iml"/>
+    </target>
+
+    <target name="compile" depends="clean">
+        <javac destdir="${dist}/classes" debug="true" debuglevel="lines,vars,source" includeantruntime="false" target="1.7" source="1.7">
+            <src path="model"/>
+            <src path="runner"/>
+            <src path="src"/>
+        </javac>
+    </target>
+</project>
