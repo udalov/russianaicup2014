@@ -1,5 +1,7 @@
 import model.*;
 
+import java.util.Arrays;
+
 import static java.lang.StrictMath.PI;
 
 public class MakeTurn {
@@ -38,6 +40,7 @@ public class MakeTurn {
 
         if (role == Decision.Role.DEFENSE) {
             Point target = decision.defensePoint;
+            // TODO: unhardcode
             if (target.sqrDist(self) > 1000) {
                 return new Result(tryPreventPuckFromGoingToGoal(), land(target));
             }
@@ -47,8 +50,73 @@ public class MakeTurn {
             // TODO: consider some average between this direction and the puck
             return new Result(tryPreventPuckFromGoingToGoal(), Go.go(0, self.getAngleTo(catchAt.x, catchAt.y)));
         } else {
-            return new Result(Do.STRIKE, Go.go(0, 0));
+            long ownerId = puck.getOwnerHockeyistId();
+            if (ownerId == -1) {
+                return isPuckReachable()
+                       ? new Result(Do.TAKE_PUCK, Go.go(0, 0))
+                       : new Result(Do.NONE, Go.go(1, self.getAngleTo(puck)));
+            } else if (ownerId != self.getId()) {
+                Hockeyist owner = findHockeyistById(ownerId);
+                return new Result(tryHitPuckOwner(owner), Go.go(1, self.getAngleTo(owner)));
+            } else {
+                if (self.getState() == HockeyistState.SWINGING) return new Result(Do.STRIKE, land(me));
+
+                Point attackPoint = determineAttackPoint();
+                // TODO: unhardcode
+                if (attackPoint.sqrDist(self) > 10000) {
+                    return new Result(Do.NONE, Go.go(1, self.getAngleTo(attackPoint.x, attackPoint.y)));
+                } else {
+                    Point target = determineGoalPoint();
+                    double angle = self.getAngleTo(target.x, target.y);
+                    if (Math.abs(angle) < PI / 180) {
+                        return new Result(Do.SWING, Go.go(0, 0) /* TODO: more accurate */);
+                    } else {
+                        return new Result(Do.NONE, Go.go(0, angle));
+                    }
+                }
+            }
         }
+    }
+
+    @NotNull
+    private Point determineAttackPoint() {
+        // TODO: unhardcode
+        double x = team.areWeOnTheLeft ? 744.0 : 280.0;
+
+        double y = me.y < (game.getRinkTop() + game.getRinkBottom()) / 2
+                   ? game.getGoalNetTop()
+                   : game.getGoalNetTop() + game.getGoalNetHeight();
+
+        return Point.of(x, y);
+    }
+
+    @NotNull
+    private Point determineGoalPoint() {
+        double x = team.areWeOnTheLeft
+                   ? game.getRinkRight() + game.getGoalNetWidth() / 2
+                   : game.getRinkLeft() - game.getGoalNetWidth() / 2;
+
+        double y = me.y < (game.getRinkTop() + game.getRinkBottom()) / 2
+                   ? game.getGoalNetTop() + game.getGoalNetHeight()
+                   : game.getGoalNetTop();
+
+        return Point.of(x, y);
+    }
+
+    @NotNull
+    private Hockeyist findHockeyistById(long id) {
+        for (Hockeyist hockeyist : world.getHockeyists()) {
+            if (hockeyist.getId() == id) return hockeyist;
+        }
+        throw new AssertionError("Invisible hockeyist: " + id + ", world: " + Arrays.toString(world.getHockeyists()));
+    }
+
+    @NotNull
+    private Do tryHitPuckOwner(@NotNull Hockeyist owner) {
+        if (self.getRemainingCooldownTicks() > 0) return Do.NONE;
+        if (owner.isTeammate()) return Do.NONE;
+        if (owner.getType() == HockeyistType.GOALIE) return Do.NONE;
+        return isReachable(owner) ? Do.STRIKE : Do.NONE;
     }
 
     @NotNull
@@ -62,8 +130,12 @@ public class MakeTurn {
     }
 
     private boolean isPuckReachable() {
-        double angle = self.getAngleTo(puck);
-        return self.getDistanceTo(puck) <= game.getStickLength() &&
+        return isReachable(puck);
+    }
+
+    private boolean isReachable(@NotNull Unit unit) {
+        double angle = self.getAngleTo(unit);
+        return self.getDistanceTo(unit) <= game.getStickLength() &&
                -game.getStickSector() / 2 <= angle && angle <= game.getStickSector() / 2;
     }
 

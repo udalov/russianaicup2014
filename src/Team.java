@@ -52,6 +52,14 @@ public class Team {
         List<Hockeyist> myFieldPlayers = myFieldPlayers(world);
         Point defensePoint = determineDefensePoint(world);
 
+        if (world.getPuck().getOwnerPlayerId() == world.getMyPlayer().getId()) {
+            long puckOwnerId = world.getPuck().getOwnerHockeyistId();
+            for (Hockeyist hockeyist : myFieldPlayers) {
+                long id = hockeyist.getId();
+                if (id == puckOwnerId) decisions.add(new Decision(id, Decision.Role.ATTACK, defensePoint));
+                else decisions.add(new Decision(id, Decision.Role.DEFENSE, defensePoint));
+            }
+        }
         Hockeyist closest = null;
         for (Hockeyist hockeyist : myFieldPlayers) {
             if (closest == null || defensePoint.sqrDist(hockeyist) < defensePoint.sqrDist(closest)) closest = hockeyist;
