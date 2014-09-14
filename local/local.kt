@@ -77,6 +77,8 @@ fun runMyStrategy(port: Long) {
  * players: empty, quick, keyboard, my
  */
 fun main(args: Array<String>) {
+    val startTime = System.nanoTime()
+
     fun player(s: String) = when (s) {
         "empty" -> EmptyPlayer
         "quick" -> QuickStartGuy
@@ -88,4 +90,7 @@ fun main(args: Array<String>) {
     val players = listOf(player(args[0]), player(args[1]))
     runGame("-vis" in args || KeyboardPlayer in players, args[2].toInt(), args[3].toLong(), players)
     println(File(LOG_FILE).readText())
+
+    val endTime = System.nanoTime()
+    println("%.3fs".format((endTime - startTime) * 1e-9))
 }
