@@ -13,7 +13,7 @@ public class Team {
     private final Game game;
 
     private final Point myGoal;
-    private final boolean areWeOnTheLeft;
+    public final boolean areWeOnTheLeft;
 
     private int currentTick = -1;
     private final List<Decision> decisions;
@@ -82,7 +82,7 @@ public class Team {
 
         double y = world.getPuck().getY();
         y = Math.max(y, game.getGoalNetTop() + radius);
-        y = Math.min(y, game.getGoalNetTop() + game.getGoalNetHeight() + radius);
+        y = Math.min(y, game.getGoalNetTop() + game.getGoalNetHeight() - radius);
 
         Point transposed = Point.of(myGoal.x, y).transpose(myGoal);
 
