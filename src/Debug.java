@@ -10,7 +10,7 @@ import java.util.Comparator;
 
 @SuppressWarnings("MagicNumber")
 public class Debug {
-    public static final boolean ENABLED = Thread.currentThread().getName().equals("local-vis");
+    public static final boolean ENABLED = Thread.currentThread().getName().equals("local-vis") && false;
 
     private static final JTextPane TEXT_AREA;
 
