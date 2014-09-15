@@ -81,7 +81,7 @@ public class MakeTurn {
     @NotNull
     private Point determineAttackPoint() {
         // TODO: unhardcode
-        double x = team.areWeOnTheLeft ? 744.0 : 280.0;
+        double x = team.areWeOnTheLeft ? 872.0 : 328.0;
 
         double y = me.y < (game.getRinkTop() + game.getRinkBottom()) / 2
                    ? game.getGoalNetTop()
