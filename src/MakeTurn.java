@@ -51,6 +51,10 @@ public class MakeTurn {
             return new Result(tryPreventPuckFromGoingToGoal(), Go.go(0, self.getAngleTo(catchAt.x, catchAt.y)));
         } else {
             long ownerId = puck.getOwnerHockeyistId();
+            if (self.getState() == HockeyistState.SWINGING) {
+                return new Result(ownerId == self.getId() ? Do.STRIKE : Do.CANCEL_STRIKE, land(me));
+            }
+
             if (ownerId == -1) {
                 return isPuckReachable()
                        ? new Result(Do.TAKE_PUCK, Go.go(0, 0))
@@ -59,8 +63,6 @@ public class MakeTurn {
                 Hockeyist owner = findHockeyistById(ownerId);
                 return new Result(tryHitPuckOwner(owner), Go.go(1, self.getAngleTo(owner)));
             } else {
-                if (self.getState() == HockeyistState.SWINGING) return new Result(Do.STRIKE, land(me));
-
                 Point attackPoint = determineAttackPoint();
                 // TODO: unhardcode
                 if (attackPoint.sqrDist(self) > 10000) {
