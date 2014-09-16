@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/aux/aux.iml" filepath="$PROJECT_DIR$/aux/aux.iml" />
+      <module fileurl="file://$PROJECT_DIR$/auxiliary/auxiliary.iml" filepath="$PROJECT_DIR$/auxiliary/auxiliary.iml" />
       <module fileurl="file://$PROJECT_DIR$/local/local.iml" filepath="$PROJECT_DIR$/local/local.iml" />
       <module fileurl="file://$PROJECT_DIR$/model/model.iml" filepath="$PROJECT_DIR$/model/model.iml" />
       <module fileurl="file://$PROJECT_DIR$/runner/runner.iml" filepath="$PROJECT_DIR$/runner/runner.iml" />
