@@ -35,6 +35,11 @@ public class MakeTurn {
 
     @NotNull
     public Result makeTurn() {
+        Player myPlayer = world.getMyPlayer();
+        if (myPlayer.isJustScoredGoal() || myPlayer.isJustMissedGoal()) {
+            return new Result(Do.STRIKE, Go.go(0.0, game.getHockeyistTurnAngleFactor()));
+        }
+
         Decision decision = team.getDecision(self.getId());
         Decision.Role role = decision.role;
 
