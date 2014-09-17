@@ -5,6 +5,7 @@ import org.apache.log4j.Logger
 import java.lang.reflect.InvocationTargetException
 import java.io.File
 import java.util.Arrays
+import java.util.Random
 
 val LOG_FILE = "out/log.txt"
 
@@ -88,7 +89,10 @@ fun main(args: Array<String>) {
     }
     if (args.size < 3) error("nice try: ${Arrays.toString(args)}")
     val players = listOf(player(args[0]), player(args[1]))
-    runGame("-vis" in args || KeyboardPlayer in players, args[2].toInt(), args[3].toLong(), players)
+    val ticks = args[2].toInt()
+    var seed = args[3].toLong()
+    if (seed == 0L) seed = Random().nextLong()
+    runGame("-vis" in args || KeyboardPlayer in players, ticks, seed, players)
     println(File(LOG_FILE).readText())
 
     val endTime = System.nanoTime()
