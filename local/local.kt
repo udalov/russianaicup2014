@@ -43,14 +43,13 @@ fun runGame(vis: Boolean, ticks: Int, seed: Long, players: List<Player>) {
     val threads = ArrayList<Thread>(2)
     threads add Thread(localRunner(vis, ticks, seed, players))
 
-    // TODO: support multiple local strategies on different ports
+    var port = 31001L
     for (player in players) {
         if (player == MyStrategy) {
             threads add Thread {
                 Thread.currentThread().setName(if (vis) "local-vis" else "local")
-                runMyStrategy(31001)
+                runMyStrategy(port++)
             }
-            break
         }
     }
 
