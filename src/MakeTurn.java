@@ -56,9 +56,13 @@ public class MakeTurn {
             }
 
             if (ownerId == -1) {
-                return isPuckReachable()
-                       ? new Result(Do.TAKE_PUCK, Go.go(0, 0))
-                       : new Result(Do.NONE, Go.go(1, self.getAngleTo(puck)));
+                if (isPuckReachable()) {
+                    return new Result(Do.TAKE_PUCK, Go.go(0, 0));
+                } else {
+                    // TODO: unhardcode
+                    Point nextPuck = Point.of(puck).shift(2 * puck.getSpeedX(), 2 * puck.getSpeedY());
+                    return new Result(Do.NONE, Go.go(1, self.getAngleTo(nextPuck.x, nextPuck.y)));
+                }
             } else if (ownerId != self.getId()) {
                 Hockeyist owner = findHockeyistById(ownerId);
                 return new Result(tryHitPuckOwner(owner), Go.go(1, self.getAngleTo(owner)));

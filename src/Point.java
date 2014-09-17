@@ -30,6 +30,11 @@ public class Point {
     }
 
     @NotNull
+    public Point shift(double x, double y) {
+        return new Point(this.x + x, this.y + y);
+    }
+
+    @NotNull
     public Point transpose(@NotNull Point center) {
         return new Point(2 * center.x - x, 2 * center.y - y);
     }
