@@ -7,6 +7,7 @@ import java.io.File
 import java.util.Arrays
 import java.util.Random
 import java.net.URLClassLoader
+import java.net.ConnectException
 
 val LOG_FILE = "out/log.txt"
 
@@ -78,7 +79,7 @@ fun runMyStrategy(runnerClass: Class<*>, port: Long) {
         try {
             main(null, array("127.0.0.1", "$port", "0000000000000000"))
         } catch (e: InvocationTargetException) {
-            if (e.getTargetException()?.getMessage()?.contains("Connection refused") ?: false) {
+            if (e.getTargetException() is ConnectException) {
                 Thread.sleep(40)
                 continue
             } else throw e.getTargetException() ?: e
