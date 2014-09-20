@@ -9,6 +9,9 @@ public final class Runner {
     private final RemoteProcessClient remoteProcessClient;
     private final String token;
 
+    private static int weScored = -1;
+    private static int weMissed = -1;
+
     public static void main(String[] args) throws IOException {
         if (args.length == 3) {
             new Runner(args).run();
@@ -55,10 +58,17 @@ public final class Runner {
                     );
                 }
 
+                weScored = playerContext.getWorld().getMyPlayer().getGoalCount();
+                weMissed = playerContext.getWorld().getOpponentPlayer().getGoalCount();
+
                 remoteProcessClient.writeMoves(moves);
             }
         } finally {
             remoteProcessClient.close();
         }
+    }
+
+    public static int[] getScore() {
+        return new int[]{weScored, weMissed};
     }
 }

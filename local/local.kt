@@ -50,14 +50,18 @@ fun runGame(vis: Boolean, ticks: Int, seed: Long, players: List<Player>) {
         if (player == MyStrategy) {
             threads add Thread {
                 Thread.currentThread().setName(if (vis) "local-vis" else "local")
-                runMyStrategy(javaClass<Player>().getClassLoader()!!, port++)
+                val runnerClass = Class.forName("Runner")
+                runMyStrategy(runnerClass, port++)
+                val score = runnerClass.getDeclaredMethod("getScore").invoke(null) as IntArray
+                val outcome = if (score[0] > score[1]) "WIN" else if (score[0] < score[1]) "LOSE" else "DRAW"
+                println("$outcome ${score[0]}:${score[1]}")
             }
         }
         else if (player == BootstrapStrategy) {
             val classLoader = URLClassLoader(array(File("out/bootstrap").toURI().toURL()), null)
-            classLoader.loadClass("MyStrategy")
+            val runnerClass = classLoader.loadClass("Runner")!!
             threads add Thread {
-                runMyStrategy(classLoader, port++)
+                runMyStrategy(runnerClass, port++)
             }
         }
     }
@@ -66,8 +70,8 @@ fun runGame(vis: Boolean, ticks: Int, seed: Long, players: List<Player>) {
     threads forEach { it.join() }
 }
 
-fun runMyStrategy(classLoader: ClassLoader, port: Long) {
-    val main = classLoader.loadClass("Runner")!!.getDeclaredMethod("main", javaClass<Array<String>>())
+fun runMyStrategy(runnerClass: Class<*>, port: Long) {
+    val main = runnerClass.getDeclaredMethod("main", javaClass<Array<String>>())
     while (true) {
         try {
             main(null, array("127.0.0.1", "$port", "0000000000000000"))
