@@ -173,7 +173,7 @@ public class MakeTurn {
         }
     }
 
-    private static double speed(@NotNull Unit unit) {
+    public static double speed(@NotNull Unit unit) {
         return Math.hypot(unit.getSpeedX(), unit.getSpeedY());
     }
 }
