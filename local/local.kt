@@ -105,8 +105,11 @@ fun main(args: Array<String>) {
     val ticks = args[2].toInt()
     var seed = args[3].toLong()
     if (seed == 0L) seed = Math.abs(Random().nextLong())
+    println("SEED $seed")
     runGame("-vis" in args || KeyboardPlayer in players, ticks, seed, players)
-    println(File(LOG_FILE).readText())
+
+    val log = File(LOG_FILE).readText()
+    if (!log.startsWith("OK")) println(log)
 
     val endTime = System.nanoTime()
     println("%.3fs".format((endTime - startTime) * 1e-9))
