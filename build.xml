@@ -1,5 +1,11 @@
-<project name="russianaicup" default="compile">
+<project name="russianaicup" default="dist">
     <property name="dist" value="dist"/>
+    <property name="jar" value="${dist}/russianaicup.jar"/>
+    <property name="local.runner" value="lib/local-runner.jar"/>
+    <property name="kotlin.plugin" value="${java.io.tmpdir}/kotlin-plugin"/>
+    <property name="kotlin.home" value="lib/kotlinc"/>
+
+    <taskdef resource="org/jetbrains/jet/buildtools/ant/antlib.xml" classpath="${kotlin.home}/lib/kotlin-ant.jar"/>
 
     <target name="clean">
         <delete dir="${dist}/classes"/>
@@ -16,5 +22,27 @@
             <src path="runner"/>
             <src path="src"/>
         </javac>
+    </target>
+
+    <target name="update">
+        <delete dir="${kotlin.home}"/>
+        <get src="http://teamcity.jetbrains.com/guestAuth/repository/download/bt345/bootstrap.tcbuildtag/kotlin-plugin-{build.number}.zip"
+             dest="${kotlin.plugin}.zip"/>
+        <unzip src="${kotlin.plugin}.zip" dest="${kotlin.plugin}"/>
+        <delete file="${kotlin.plugin}.zip"/>
+        <move file="${kotlin.plugin}/Kotlin/kotlinc" tofile="${kotlin.home}"/>
+        <delete dir="${kotlin.plugin}"/>
+    </target>
+
+    <target name="dist" depends="compile">
+        <delete file="${jar}"/>
+        <kotlinc src="local" classpath="${local.runner}:${dist}/classes" output="${dist}/classes"/>
+        <jar destfile="${jar}" basedir="${dist}/classes">
+            <zipfileset includes="**/*" src="${kotlin.home}/lib/kotlin-runtime.jar"/>
+            <zipfileset includes="**/*" src="${local.runner}"/>
+            <manifest>
+                <attribute name="Main-Class" value="runner.local.LocalPackage"/>
+            </manifest>
+        </jar>
     </target>
 </project>

@@ -1,0 +1,17 @@
+#!/bin/bash
+
+set -e
+
+ticks_count=3000
+
+for seed in `seq 1 50`
+do
+    echo -n "$seed "
+    java -jar dist/russianaicup.jar old my $ticks_count $seed
+done
+
+for seed in `seq 51 100`
+do
+    echo -n "$seed "
+    java -jar dist/russianaicup.jar my old $ticks_count $seed
+done

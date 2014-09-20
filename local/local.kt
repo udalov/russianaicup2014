@@ -88,7 +88,7 @@ fun runMyStrategy(runnerClass: Class<*>, port: Long) {
 }
 
 /**
- * usage: ... player1 player2 ticks seed [-vis]
+ * usage: ... player1 player2 ticks seed [-vis] [-full]
  * players: empty, quick, keyboard, my, old
  */
 fun main(args: Array<String>) {
@@ -107,12 +107,14 @@ fun main(args: Array<String>) {
     val ticks = args[2].toInt()
     var seed = args[3].toLong()
     if (seed == 0L) seed = Math.abs(Random().nextLong())
-    println("SEED $seed")
+    val full = "-full" in args
+    if (full) println("SEED $seed")
+
     runGame("-vis" in args || KeyboardPlayer in players, ticks, seed, players)
 
     val log = File(LOG_FILE).readText()
-    if (!log.startsWith("OK")) println(log)
+    if (full && !log.startsWith("OK")) println(log)
 
     val endTime = System.nanoTime()
-    println("%.3fs".format((endTime - startTime) * 1e-9))
+    if (full) println("%.3fs".format((endTime - startTime) * 1e-9))
 }
