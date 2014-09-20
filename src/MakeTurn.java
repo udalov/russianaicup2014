@@ -52,8 +52,11 @@ public class MakeTurn {
             Point strikeTarget = whereEnemyWillStrike();
             Line strikeLine = Line.between(Point.of(puck), strikeTarget);
             Point catchAt = strikeLine.at(me.x);
-            // TODO: consider some average between this direction and the puck
-            return new Result(tryPreventPuckFromGoingToGoal(), Go.go(0, self.getAngleTo(catchAt.x, catchAt.y)));
+            double angleToPuck = self.getAngleTo(puck);
+            double angle = angleToPuck < -PI / 2 ? -PI / 2 :
+                           angleToPuck > PI / 2 ? PI / 2 :
+                           (self.getAngleTo(catchAt.x, catchAt.y) + angleToPuck) / 2;
+            return new Result(tryPreventPuckFromGoingToGoal(), Go.go(0, angle));
         } else {
             long ownerId = puck.getOwnerHockeyistId();
             if (self.getState() == HockeyistState.SWINGING) {
