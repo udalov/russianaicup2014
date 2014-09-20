@@ -6,11 +6,13 @@ import java.lang.reflect.InvocationTargetException
 import java.io.File
 import java.util.Arrays
 import java.util.Random
+import java.net.URLClassLoader
 
 val LOG_FILE = "out/log.txt"
 
 open class Player(val name: String, val classFile: String)
 object MyStrategy : Player("MyStrategy", "#LocalTestPlayer")
+object BootstrapStrategy : Player("Bootstrap", "#LocalTestPlayer")
 object KeyboardPlayer : Player("KeyboardPlayer", "#KeyboardPlayer")
 object EmptyPlayer : Player("EmptyPlayer", javaClass<com.a.b.a.a.e.a>().getSimpleName() + ".class")
 object QuickStartGuy : Player("QuickStartGuy", javaClass<com.a.b.a.a.e.b>().getSimpleName() + ".class")
@@ -48,7 +50,14 @@ fun runGame(vis: Boolean, ticks: Int, seed: Long, players: List<Player>) {
         if (player == MyStrategy) {
             threads add Thread {
                 Thread.currentThread().setName(if (vis) "local-vis" else "local")
-                runMyStrategy(port++)
+                runMyStrategy(javaClass<Player>().getClassLoader()!!, port++)
+            }
+        }
+        else if (player == BootstrapStrategy) {
+            val classLoader = URLClassLoader(array(File("out/bootstrap").toURI().toURL()), null)
+            classLoader.loadClass("MyStrategy")
+            threads add Thread {
+                runMyStrategy(classLoader, port++)
             }
         }
     }
@@ -57,13 +66,13 @@ fun runGame(vis: Boolean, ticks: Int, seed: Long, players: List<Player>) {
     threads forEach { it.join() }
 }
 
-fun runMyStrategy(port: Long) {
-    val main = Class.forName("Runner").getDeclaredMethod("main", javaClass<Array<String>>())
+fun runMyStrategy(classLoader: ClassLoader, port: Long) {
+    val main = classLoader.loadClass("Runner")!!.getDeclaredMethod("main", javaClass<Array<String>>())
     while (true) {
         try {
             main(null, array("127.0.0.1", "$port", "0000000000000000"))
         } catch (e: InvocationTargetException) {
-            if (e.getTargetException()?.getMessage()?.startsWith("Connection refused") ?: false) {
+            if (e.getTargetException()?.getMessage()?.contains("Connection refused") ?: false) {
                 Thread.sleep(40)
                 continue
             } else throw e.getTargetException() ?: e
@@ -74,7 +83,7 @@ fun runMyStrategy(port: Long) {
 
 /**
  * usage: ... player1 player2 ticks seed [-vis]
- * players: empty, quick, keyboard, my
+ * players: empty, quick, keyboard, my, old
  */
 fun main(args: Array<String>) {
     val startTime = System.nanoTime()
@@ -84,13 +93,14 @@ fun main(args: Array<String>) {
         "quick" -> QuickStartGuy
         "keyboard" -> KeyboardPlayer
         "my" -> MyStrategy
+        "old" -> BootstrapStrategy
         else -> error("nice try: $s")
     }
     if (args.size < 3) error("nice try: ${Arrays.toString(args)}")
     val players = listOf(player(args[0]), player(args[1]))
     val ticks = args[2].toInt()
     var seed = args[3].toLong()
-    if (seed == 0L) seed = Random().nextLong()
+    if (seed == 0L) seed = Math.abs(Random().nextLong())
     runGame("-vis" in args || KeyboardPlayer in players, ticks, seed, players)
     println(File(LOG_FILE).readText())
 

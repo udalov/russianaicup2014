@@ -1,0 +1,28 @@
+#!/bin/bash
+
+set -e
+
+if [[ $# -ne 1 ]]; then echo "rev expected"; exit 1; fi
+rev=`git rev-parse --short $1`
+
+output=out/$rev
+rm -rf $output
+mkdir -p $output/src
+
+for line in `git ls-tree $rev src | cut -f 1 | cut -d ' ' -f 3 | xargs git ls-tree | cut -f 2`
+do
+    if [[ "$line" != *.java ]]; then continue; fi
+    file=`echo $line`
+    git cat-file -p $rev:src/$file > $output/src/$file
+done
+
+cp -r model/model $output/src/model
+cp -r model/*.java $output/src/
+cp -r runner/*.java $output/src/
+
+du -hs $output
+
+javac -target 1.7 -source 1.7 $output/src/*.java $output/src/model/*.java -d $output
+
+rm -f out/bootstrap
+ln -s $rev out/bootstrap
