@@ -45,23 +45,25 @@ fun runGame(vis: Boolean, ticks: Int, seed: Long, players: List<Player>) {
     val threads = ArrayList<Thread>(2)
     threads add Thread(localRunner(vis, ticks, seed, players))
 
-    var port = 31001L
+    var nextPort = 31001L
     for (player in players) {
         if (player == MyStrategy) {
+            val port = nextPort++
             threads add Thread {
                 Thread.currentThread().setName(if (vis) "local-vis" else "local")
                 val runnerClass = Class.forName("Runner")
-                runMyStrategy(runnerClass, port++)
+                runMyStrategy(runnerClass, port)
                 val score = runnerClass.getDeclaredMethod("getScore").invoke(null) as IntArray
                 val outcome = if (score[0] > score[1]) "WIN" else if (score[0] < score[1]) "LOSE" else "DRAW"
                 println("$outcome ${score[0]}:${score[1]}")
             }
         }
         else if (player == BootstrapStrategy) {
+            val port = nextPort++
             val classLoader = URLClassLoader(array(File("out/bootstrap").toURI().toURL()), null)
             val runnerClass = classLoader.loadClass("Runner")!!
             threads add Thread {
-                runMyStrategy(runnerClass, port++)
+                runMyStrategy(runnerClass, port)
             }
         }
     }
