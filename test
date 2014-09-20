@@ -2,7 +2,7 @@
 
 set -e
 
-ticks_count=3000
+ticks_count=6000
 
 for seed in `seq 1 50`
 do
