@@ -1,7 +1,4 @@
-import model.Game;
-import model.Hockeyist;
-import model.Move;
-import model.World;
+import model.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,9 +12,9 @@ public class MyStrategy implements Strategy {
 
     @Override
     public void move(@NotNull Hockeyist self, @NotNull World world, @NotNull Game game, @NotNull Move move) {
-        Team team = findTeam(self.getPlayerId());
+        Team team = findTeam(world.getMyPlayer());
         if (team == null) {
-            team = new Team(self.getPlayerId(), game, world);
+            team = new Team(game, world);
             TEAMS.add(team);
         }
 
@@ -35,9 +32,9 @@ public class MyStrategy implements Strategy {
     }
 
     @Nullable
-    private static Team findTeam(long playerId) {
+    private static Team findTeam(@NotNull Player player) {
         for (Team team : TEAMS) {
-            if (team.playerId == playerId) return team;
+            if (team.myPlayer.getId() == player.getId()) return team;
         }
         return null;
     }

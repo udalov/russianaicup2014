@@ -92,7 +92,7 @@ public class MakeTurn {
     @NotNull
     private Point determineAttackPoint() {
         // TODO: unhardcode
-        double x = team.areWeOnTheLeft ? 872.0 : 328.0;
+        double x = 600.0 + team.attack * 272.0;
 
         double y = me.y < (game.getRinkTop() + game.getRinkBottom()) / 2
                    ? game.getGoalNetTop()
@@ -103,9 +103,7 @@ public class MakeTurn {
 
     @NotNull
     private Point determineGoalPoint() {
-        double x = team.areWeOnTheLeft
-                   ? game.getRinkRight() + game.getGoalNetWidth() / 2
-                   : game.getRinkLeft() - game.getGoalNetWidth() / 2;
+        double x = world.getOpponentPlayer().getNetFront() + team.attack * game.getGoalNetWidth() / 2;
 
         double y = me.y < (game.getRinkTop() + game.getRinkBottom()) / 2
                    ? game.getGoalNetTop() + game.getGoalNetHeight()
@@ -152,9 +150,7 @@ public class MakeTurn {
 
     @NotNull
     private Point whereEnemyWillStrike() {
-        double x = team.areWeOnTheLeft
-                   ? game.getRinkLeft() - game.getGoalNetWidth() / 2
-                   : game.getRinkRight() + game.getGoalNetWidth() / 2;
+        double x = team.myPlayer.getNetFront() - team.attack * game.getGoalNetWidth() / 2;
         double y = puck.getY() < (game.getRinkTop() + game.getRinkBottom()) / 2
                    ? game.getGoalNetTop()
                    : game.getGoalNetTop() + game.getGoalNetHeight();

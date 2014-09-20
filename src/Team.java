@@ -1,39 +1,27 @@
-import model.Game;
-import model.Hockeyist;
-import model.HockeyistType;
-import model.World;
+import model.*;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class Team {
-    public final long playerId;
+    public final Player myPlayer;
 
     // TODO: assert that Game doesn't change between ticks
     private final Game game;
 
-    private final Point myGoal;
-    public final boolean areWeOnTheLeft;
+    // 1 if we are on the left, -1 if we are on the right
+    public final int attack;
 
     private int currentTick = -1;
     private final List<Decision> decisions;
 
-    public Team(long playerId, @NotNull Game game, @NotNull World startingWorld) {
-        this.playerId = playerId;
+    public Team(@NotNull Game game, @NotNull World startingWorld) {
         this.game = game;
 
-        myGoal = Point.of(findMyGoalie(startingWorld));
-        areWeOnTheLeft = myGoal.x < (game.getRinkLeft() + game.getRinkRight()) / 2;
+        myPlayer = startingWorld.getMyPlayer();
+        attack = myPlayer.getNetFront() < (game.getRinkLeft() + game.getRinkRight()) / 2 ? 1 : -1;
 
         decisions = new ArrayList<>(countControllablePlayers(startingWorld));
-    }
-
-    @NotNull
-    private static Hockeyist findMyGoalie(@NotNull World startingWorld) {
-        for (Hockeyist hockeyist : startingWorld.getHockeyists()) {
-            if (hockeyist.isTeammate() && hockeyist.getType() == HockeyistType.GOALIE) return hockeyist;
-        }
-        throw new AssertionError("No goalie on the first tick :(");
     }
 
     private static int countControllablePlayers(@NotNull World startingWorld) {
@@ -92,9 +80,9 @@ public class Team {
         y = Math.max(y, game.getGoalNetTop() + radius);
         y = Math.min(y, game.getGoalNetTop() + game.getGoalNetHeight() - radius);
 
-        Point transposed = Point.of(myGoal.x, y).transpose(myGoal);
+        Point transposed = Point.of(myPlayer.getNetFront() + attack * radius, game.getRinkTop() + game.getRinkBottom() - y);
 
-        return transposed.shiftX((areWeOnTheLeft ? 1 : -1) * radius);
+        return transposed.shiftX(attack * radius);
     }
 
     @NotNull
