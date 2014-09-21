@@ -40,6 +40,8 @@ public class MakeTurn {
             return new Result(Do.STRIKE, Go.go(0.0, game.getHockeyistTurnAngleFactor()));
         }
 
+        long puckOwnerId = puck.getOwnerHockeyistId();
+
         Decision decision = team.getDecision(self.getId());
         Decision.Role role = decision.role;
 
@@ -49,7 +51,21 @@ public class MakeTurn {
             if (target.sqrDist(self) > 1000) {
                 return new Result(tryPreventPuckFromGoingToGoal(), land(target));
             }
-            else if (target.sqrDist(self) > 100) {
+
+            if (puckOwnerId != -1) {
+                Hockeyist puckOwner = findHockeyistById(puckOwnerId);
+                // TODO: unhardcode
+                if (!puckOwner.isTeammate() && self.getDistanceTo(puckOwner) < 2500) {
+                    if (isPuckReachable()) {
+                        // TODO: try TAKE_PUCK when the probability is high
+                        return new Result(Do.STRIKE, goToUnit(puck));
+                    } else {
+                        return new Result(tryHitNearbyEnemies(), goToUnit(puck));
+                    }
+                }
+            }
+
+            if (target.sqrDist(self) > 100) {
                 return new Result(tryPreventPuckFromGoingToGoal(), Go.go(stop(), self.getAngleTo(puck)));
             }
             Point strikeTarget = whereEnemyWillStrike();
@@ -61,21 +77,20 @@ public class MakeTurn {
                            (self.getAngleTo(catchAt.x, catchAt.y) + angleToPuck) / 2;
             return new Result(tryPreventPuckFromGoingToGoal(), Go.go(stop(), angle));
         } else {
-            long ownerId = puck.getOwnerHockeyistId();
             if (self.getState() == HockeyistState.SWINGING) {
                 Point attackPoint = determineAttackPoint();
                 double angle = self.getAngleTo(attackPoint.x, attackPoint.y);
-                return new Result(ownerId == self.getId() ? Do.STRIKE : Do.CANCEL_STRIKE, Go.go(stop(), angle));
+                return new Result(puckOwnerId == self.getId() ? Do.STRIKE : Do.CANCEL_STRIKE, Go.go(stop(), angle));
             }
 
-            if (ownerId == -1) {
+            if (puckOwnerId == -1) {
                 if (isPuckReachable()) {
                     return new Result(Do.TAKE_PUCK, Go.go(0, 0));
                 } else {
                     return new Result(tryHitNearbyEnemies(), goToUnit(puck));
                 }
-            } else if (ownerId != self.getId()) {
-                Hockeyist owner = findHockeyistById(ownerId);
+            } else if (puckOwnerId != self.getId()) {
+                Hockeyist owner = findHockeyistById(puckOwnerId);
                 return new Result(tryHitPuckOwner(owner), goToUnit(owner));
             } else {
 /*
