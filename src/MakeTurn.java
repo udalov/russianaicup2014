@@ -88,6 +88,10 @@ public class MakeTurn {
                     }
                 }
 */
+                if (world.getTick() < 50) {
+                    return new Result(Do.NONE, Go.go(1, game.getRandomSeed() % 2 == 0 ? -1 : 1));
+                }
+
                 Point attackPoint = determineAttackPoint();
                 // TODO: unhardcode
                 if (attackPoint.sqrDist(self) > 10000) {
