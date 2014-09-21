@@ -2,7 +2,7 @@ import model.*;
 
 import java.util.Arrays;
 
-import static java.lang.StrictMath.PI;
+import static java.lang.StrictMath.*;
 
 public class MakeTurn {
     private final Team team;
@@ -49,6 +49,9 @@ public class MakeTurn {
             if (target.sqrDist(self) > 1000) {
                 return new Result(tryPreventPuckFromGoingToGoal(), land(target));
             }
+            else if (target.sqrDist(self) > 100) {
+                return new Result(tryPreventPuckFromGoingToGoal(), Go.go(stop(), self.getAngleTo(puck)));
+            }
             Point strikeTarget = whereEnemyWillStrike();
             Line strikeLine = Line.between(Point.of(puck), strikeTarget);
             Point catchAt = strikeLine.at(me.x);
@@ -56,11 +59,11 @@ public class MakeTurn {
             double angle = angleToPuck < -PI / 2 ? -PI / 2 :
                            angleToPuck > PI / 2 ? PI / 2 :
                            (self.getAngleTo(catchAt.x, catchAt.y) + angleToPuck) / 2;
-            return new Result(tryPreventPuckFromGoingToGoal(), Go.go(0, angle));
+            return new Result(tryPreventPuckFromGoingToGoal(), Go.go(stop(), angle));
         } else {
             long ownerId = puck.getOwnerHockeyistId();
             if (self.getState() == HockeyistState.SWINGING) {
-                return new Result(ownerId == self.getId() ? Do.STRIKE : Do.CANCEL_STRIKE, land(me));
+                return new Result(ownerId == self.getId() ? Do.STRIKE : Do.CANCEL_STRIKE, Go.go(stop(), 0));
             }
 
             if (ownerId == -1) {
@@ -75,6 +78,16 @@ public class MakeTurn {
                 Hockeyist owner = findHockeyistById(ownerId);
                 return new Result(tryHitPuckOwner(owner), Go.go(1, self.getAngleTo(owner)));
             } else {
+/*
+                for (Hockeyist hockeyist : world.getHockeyists()) {
+                    if (!hockeyist.isTeammate() &&
+                        hockeyist.getRemainingCooldownTicks() < 5 &&
+                        hockeyist.getRemainingKnockdownTicks() < 5 &&
+                        self.getDistanceTo(hockeyist) < self.getRadius() + hockeyist.getRadius() + 10) {
+                        return new Result(Do.STRIKE, Go.go(1, 0));
+                    }
+                }
+*/
                 Point attackPoint = determineAttackPoint();
                 // TODO: unhardcode
                 if (attackPoint.sqrDist(self) > 10000) {
@@ -95,7 +108,7 @@ public class MakeTurn {
     @NotNull
     private Point determineAttackPoint() {
         // TODO: unhardcode
-        double x = 600.0 + team.attack * 272.0;
+        double x = (game.getRinkLeft() + game.getRinkRight()) / 2 + team.attack * 272.0;
 
         double y = me.y < (game.getRinkTop() + game.getRinkBottom()) / 2
                    ? game.getGoalNetTop()
@@ -160,17 +173,42 @@ public class MakeTurn {
         return Point.of(x, y);
     }
 
+    private double stop() {
+        if (speed(self) < 1.0) return 0.0;
+        return angleDiff(atan2(self.getSpeedY(), self.getSpeedX()), self.getAngle()) > PI / 2 ? 1.0 : -1.0;
+    }
+
     @NotNull
     private Go land(@NotNull Point target) {
         double alpha = self.getAngleTo(target.x, target.y);
-        double speed = speed(self);
         double distance = self.getDistanceTo(target.x, target.y);
-        // TODO: consider raising this value to make defenders move back more frequently
-        if (alpha > PI / 2 || alpha < -PI / 2) {
-            return Go.go(distance < speed * speed / 2 ? 1 : -1, alpha > 0 ? alpha - PI : PI - alpha);
+        double speed = speed(self);
+
+        boolean closeBy = distance < speed * speed / 2;
+
+        // TODO: unhardcode
+        double eps = 2 * game.getHockeyistTurnAngleFactor();
+
+        // TODO: unhardcode
+        if (abs(alpha) < PI / 2) {
+            // The target is ahead, moving forward
+            if (abs(alpha) < eps) {
+                // Keep moving forward, accelerate or slow down depending on the distance
+                return Go.go(closeBy ? -1 : 1, alpha);
+            }
+            // Else lower our speed if needed and turn to the target
+            return Go.go(speed < 1.0 ? 0.0 : -1, alpha);
         } else {
-            return Go.go(distance < speed * speed / 2 ? -1 : 1, alpha);
+            double turn = alpha > 0 ? alpha - PI : PI - alpha;
+            if (abs(PI - abs(alpha)) < eps) {
+                return Go.go(closeBy ? 1 : -1, turn);
+            }
+            return Go.go(speed < 1.0 ? 0.0 : 1, turn);
         }
+    }
+
+    private static double angleDiff(double a, double b) {
+        return abs(atan2(sin(a - b), cos(a - b)));
     }
 
     public static double speed(@NotNull Unit unit) {

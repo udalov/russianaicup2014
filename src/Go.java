@@ -11,4 +11,9 @@ public class Go {
     public static Go go(double speedup, double turn) {
         return new Go(speedup, turn);
     }
+
+    @Override
+    public String toString() {
+        return String.format("speedup %.3f turn %.3f", speedup, turn);
+    }
 }

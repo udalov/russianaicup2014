@@ -33,4 +33,9 @@ public class Do {
     public static Do substitute(int teammateIndex) {
         return new Do(ActionType.SUBSTITUTE, 0, 0, teammateIndex);
     }
+
+    @Override
+    public String toString() {
+        return type.toString();
+    }
 }

@@ -6,7 +6,6 @@ import java.util.List;
 public class Team {
     public final Player myPlayer;
 
-    // TODO: assert that Game doesn't change between ticks
     private final Game game;
 
     // 1 if we are on the left, -1 if we are on the right
@@ -119,13 +118,7 @@ public class Team {
         // TODO: radius can be different for different hockeyists
         double radius = world.getHockeyists()[0].getRadius();
 
-        double y = world.getPuck().getY();
-        y = Math.max(y, game.getGoalNetTop() + radius);
-        y = Math.min(y, game.getGoalNetTop() + game.getGoalNetHeight() - radius);
-
-        Point transposed = Point.of(myPlayer.getNetFront() + attack * radius, game.getRinkTop() + game.getRinkBottom() - y);
-
-        return transposed.shiftX(attack * radius);
+        return Point.of(myPlayer.getNetFront() + attack * (radius * 3.2), (myPlayer.getNetTop() + myPlayer.getNetBottom()) / 2);
     }
 
     @NotNull
