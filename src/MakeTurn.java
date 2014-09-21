@@ -72,7 +72,7 @@ public class MakeTurn {
                 if (isPuckReachable()) {
                     return new Result(Do.TAKE_PUCK, Go.go(0, 0));
                 } else {
-                    return new Result(Do.NONE, goToUnit(puck));
+                    return new Result(tryHitNearbyEnemies(), goToUnit(puck));
                 }
             } else if (ownerId != self.getId()) {
                 Hockeyist owner = findHockeyistById(ownerId);
@@ -155,6 +155,16 @@ public class MakeTurn {
         if (owner.isTeammate()) return Do.NONE;
         if (owner.getType() == HockeyistType.GOALIE) return Do.NONE;
         return isReachable(owner) ? Do.STRIKE : Do.NONE;
+    }
+
+    @NotNull
+    private Do tryHitNearbyEnemies() {
+        for (Hockeyist hockeyist : world.getHockeyists()) {
+            if (hockeyist.isTeammate()) continue;
+            if (hockeyist.getType() == HockeyistType.GOALIE) continue;
+            if (isReachable(hockeyist)) return Do.STRIKE;
+        }
+        return Do.NONE;
     }
 
     @NotNull
