@@ -63,20 +63,20 @@ public class MakeTurn {
         } else {
             long ownerId = puck.getOwnerHockeyistId();
             if (self.getState() == HockeyistState.SWINGING) {
-                return new Result(ownerId == self.getId() ? Do.STRIKE : Do.CANCEL_STRIKE, Go.go(stop(), 0));
+                Point attackPoint = determineAttackPoint();
+                double angle = self.getAngleTo(attackPoint.x, attackPoint.y);
+                return new Result(ownerId == self.getId() ? Do.STRIKE : Do.CANCEL_STRIKE, Go.go(stop(), angle));
             }
 
             if (ownerId == -1) {
                 if (isPuckReachable()) {
                     return new Result(Do.TAKE_PUCK, Go.go(0, 0));
                 } else {
-                    // TODO: unhardcode
-                    Point nextPuck = Point.of(puck).shift(2 * puck.getSpeedX(), 2 * puck.getSpeedY());
-                    return new Result(Do.NONE, Go.go(1, self.getAngleTo(nextPuck.x, nextPuck.y)));
+                    return new Result(Do.NONE, goToUnit(puck));
                 }
             } else if (ownerId != self.getId()) {
                 Hockeyist owner = findHockeyistById(ownerId);
-                return new Result(tryHitPuckOwner(owner), Go.go(1, self.getAngleTo(owner)));
+                return new Result(tryHitPuckOwner(owner), goToUnit(owner));
             } else {
 /*
                 for (Hockeyist hockeyist : world.getHockeyists()) {
@@ -95,7 +95,8 @@ public class MakeTurn {
                 Point attackPoint = determineAttackPoint();
                 // TODO: unhardcode
                 if (attackPoint.sqrDist(self) > 10000) {
-                    return new Result(Do.NONE, Go.go(1, self.getAngleTo(attackPoint.x, attackPoint.y)));
+                    double angle = self.getAngleTo(attackPoint.x, attackPoint.y);
+                    return new Result(Do.NONE, Go.go(abs(angle) < PI / 2 ? 1 : stop(), angle));
                 } else {
                     Point target = determineGoalPoint();
                     double angle = self.getAngleTo(target.x, target.y);
@@ -107,6 +108,14 @@ public class MakeTurn {
                 }
             }
         }
+    }
+
+    @NotNull
+    private Go goToUnit(@NotNull Unit unit) {
+        // TODO: unhardcode
+        Point futurePosition = Point.of(unit).shift(2 * unit.getSpeedX(), 2 * unit.getSpeedY());
+        double angle = self.getAngleTo(futurePosition.x, futurePosition.y);
+        return Go.go(abs(angle) < PI / 2 ? 1 : stop(), angle);
     }
 
     @NotNull
