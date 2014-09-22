@@ -8,8 +8,7 @@
     <taskdef resource="org/jetbrains/jet/buildtools/ant/antlib.xml" classpath="${kotlin.home}/lib/kotlin-ant.jar"/>
 
     <target name="clean">
-        <delete dir="${dist}/classes"/>
-        <mkdir dir="${dist}/classes"/>
+        <delete dir="${dist}"/>
     </target>
 
     <target name="src" depends="clean">
