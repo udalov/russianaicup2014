@@ -16,6 +16,7 @@
     </target>
 
     <target name="compile" depends="clean">
+        <mkdir dir="${dist}/classes"/>
         <javac destdir="${dist}/classes" debug="true" debuglevel="lines,vars,source" includeantruntime="false" target="1.7" source="1.7">
             <src path="model"/>
             <src path="runner"/>
