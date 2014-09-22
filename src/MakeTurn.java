@@ -46,16 +46,12 @@ public class MakeTurn {
         Decision.Role role = decision.role;
 
         if (role == Decision.Role.DEFENSE) {
-            Point target = decision.defensePoint;
-            // TODO: unhardcode
-            if (target.sqrDist(self) > 1000) {
-                return new Result(tryPreventPuckFromGoingToGoal(), land(target));
-            }
+            Point defensePoint = decision.defensePoint;
 
-            if (puckOwnerId != -1) {
+            if (self.getRemainingCooldownTicks() == 0 && puckOwnerId != -1) {
                 Hockeyist puckOwner = findHockeyistById(puckOwnerId);
                 // TODO: unhardcode
-                if (!puckOwner.isTeammate() && self.getDistanceTo(puckOwner) < 2500) {
+                if (!puckOwner.isTeammate() && defensePoint.sqrDist(puckOwner) < 160000) {
                     if (isPuckReachable()) {
                         // TODO: try TAKE_PUCK when the probability is high
                         return new Result(Do.STRIKE, goToUnit(puck));
@@ -65,8 +61,13 @@ public class MakeTurn {
                 }
             }
 
-            if (target.sqrDist(self) > 100) {
-                return new Result(tryPreventPuckFromGoingToGoal(), Go.go(stop(), self.getAngleTo(puck)));
+            // TODO: unhardcode
+            if (defensePoint.sqrDist(self) > 1000) {
+                return new Result(tryBlockPuck(), land(defensePoint));
+            }
+
+            if (defensePoint.sqrDist(self) > 100) {
+                return new Result(tryBlockPuck(), Go.go(stop(), self.getAngleTo(puck)));
             }
             Point strikeTarget = whereEnemyWillStrike();
             Line strikeLine = Line.between(Point.of(puck), strikeTarget);
@@ -75,7 +76,7 @@ public class MakeTurn {
             double angle = angleToPuck < -PI / 2 ? -PI / 2 :
                            angleToPuck > PI / 2 ? PI / 2 :
                            (self.getAngleTo(catchAt.x, catchAt.y) + angleToPuck) / 2;
-            return new Result(tryPreventPuckFromGoingToGoal(), Go.go(stop(), angle));
+            return new Result(tryBlockPuck(), Go.go(stop(), angle));
         } else {
             if (self.getState() == HockeyistState.SWINGING) {
                 Point attackPoint = determineAttackPoint();
@@ -90,8 +91,7 @@ public class MakeTurn {
                     return new Result(tryHitNearbyEnemies(), goToUnit(puck));
                 }
             } else if (puckOwnerId != self.getId()) {
-                Hockeyist owner = findHockeyistById(puckOwnerId);
-                return new Result(tryHitPuckOwner(owner), goToUnit(owner));
+                return new Result(tryHitNearbyEnemies(), goToUnit(findHockeyistById(puckOwnerId)));
             } else {
 /*
                 for (Hockeyist hockeyist : world.getHockeyists()) {
@@ -165,15 +165,8 @@ public class MakeTurn {
     }
 
     @NotNull
-    private Do tryHitPuckOwner(@NotNull Hockeyist owner) {
-        if (self.getRemainingCooldownTicks() > 0) return Do.NONE;
-        if (owner.isTeammate()) return Do.NONE;
-        if (owner.getType() == HockeyistType.GOALIE) return Do.NONE;
-        return isReachable(owner) ? Do.STRIKE : Do.NONE;
-    }
-
-    @NotNull
     private Do tryHitNearbyEnemies() {
+        if (self.getRemainingCooldownTicks() > 0) return Do.NONE;
         for (Hockeyist hockeyist : world.getHockeyists()) {
             if (hockeyist.isTeammate()) continue;
             if (hockeyist.getType() == HockeyistType.GOALIE) continue;
@@ -183,7 +176,7 @@ public class MakeTurn {
     }
 
     @NotNull
-    private Do tryPreventPuckFromGoingToGoal() {
+    private Do tryBlockPuck() {
         if (self.getRemainingCooldownTicks() > 0) return Do.NONE;
         if (isPuckReachable()) {
             // TODO: something more clever, also take attributes into account
