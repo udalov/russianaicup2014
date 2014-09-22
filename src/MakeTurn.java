@@ -118,7 +118,9 @@ public class MakeTurn {
     @NotNull
     private Go goToUnit(@NotNull Unit unit) {
         // TODO: unhardcode
-        Point futurePosition = Point.of(unit).shift(2 * unit.getSpeedX(), 2 * unit.getSpeedY());
+        double speed = max(speed(self), 10);
+        double distance = self.getDistanceTo(unit);
+        Point futurePosition = Point.of(unit).shift(distance / speed * unit.getSpeedX(), distance / speed * unit.getSpeedY());
         double angle = self.getAngleTo(futurePosition.x, futurePosition.y);
         return Go.go(abs(angle) < PI / 2 ? 1 : stop(), angle);
     }
