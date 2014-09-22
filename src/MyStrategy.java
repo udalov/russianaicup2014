@@ -20,7 +20,7 @@ public class MyStrategy implements Strategy {
 
         team.solveTick(world);
 
-        MakeTurn.Result result = new MakeTurn(team, self, world, game).makeTurn();
+        Result result = new MakeTurn(team, self, world, game).makeTurn();
         move.setAction(result.action.type);
         move.setPassPower(result.action.passPower);
         move.setPassAngle(result.action.passAngle);

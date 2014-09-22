@@ -23,16 +23,6 @@ public class MakeTurn {
         this.puck = world.getPuck();
     }
 
-    public static class Result {
-        public final Do action;
-        public final Go direction;
-
-        public Result(@NotNull Do action, @NotNull Go direction) {
-            this.action = action;
-            this.direction = direction;
-        }
-    }
-
     @NotNull
     public Result makeTurn() {
         Player myPlayer = world.getMyPlayer();
@@ -116,7 +106,7 @@ public class MakeTurn {
                     Point target = determineGoalPoint();
                     double angle = self.getAngleTo(target.x, target.y);
                     if (Math.abs(angle) < PI / 180) {
-                        return new Result(Do.SWING, Go.go(0, 0) /* TODO: more accurate */);
+                        return Result.SWING;
                     } else {
                         return new Result(Do.NONE, Go.go(0, angle));
                     }
