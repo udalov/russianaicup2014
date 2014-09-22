@@ -131,8 +131,8 @@ public class MakeTurn {
         double x = (game.getRinkLeft() + game.getRinkRight()) / 2 + team.attack * 272.0;
 
         double y = me.y < (game.getRinkTop() + game.getRinkBottom()) / 2
-                   ? game.getGoalNetTop()
-                   : game.getGoalNetTop() + game.getGoalNetHeight();
+                   ? game.getGoalNetTop() - game.getGoalNetHeight() / 6
+                   : game.getGoalNetTop() + game.getGoalNetHeight() + game.getGoalNetHeight() / 6;
 
         return Point.of(x, y);
     }
