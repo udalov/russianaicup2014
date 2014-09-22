@@ -131,7 +131,14 @@ public class MakeTurn {
         // TODO: unhardcode
         double x = (game.getRinkLeft() + game.getRinkRight()) / 2 + team.attack * 272.0;
 
-        double y = me.y < (game.getRinkTop() + game.getRinkBottom()) / 2
+        boolean onTop = me.y < (game.getRinkTop() + game.getRinkBottom()) / 2;
+
+        boolean onOurSideOfField = abs(me.x - world.getMyPlayer().getNetFront()) < abs(me.x - world.getOpponentPlayer().getNetFront());
+        if (onOurSideOfField) {
+            return Point.of(x, onTop ? game.getRinkTop() + self.getRadius() : game.getRinkBottom() - self.getRadius());
+        }
+
+        double y = onTop
                    ? game.getGoalNetTop() - game.getGoalNetHeight() / 6
                    : game.getGoalNetTop() + game.getGoalNetHeight() + game.getGoalNetHeight() / 6;
 
