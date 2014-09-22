@@ -1,5 +1,7 @@
 import model.Unit;
 
+import static java.lang.StrictMath.sqrt;
+
 public class Point {
     public final double x;
     public final double y;
@@ -45,6 +47,18 @@ public class Point {
 
     public double sqrDist(@NotNull Unit unit) {
         return sqrDist(unit.getX(), unit.getY());
+    }
+
+    public double distance(double x0, double y0) {
+        return sqrt(sqrDist(x0, y0));
+    }
+
+    public double distance(@NotNull Point other) {
+        return distance(other.x, other.y);
+    }
+
+    public double distance(@NotNull Unit other) {
+        return distance(other.getX(), other.getY());
     }
 
     @Override

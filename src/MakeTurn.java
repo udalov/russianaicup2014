@@ -41,7 +41,7 @@ public class MakeTurn {
             if (self.getRemainingCooldownTicks() == 0 && puckOwnerId != -1) {
                 Hockeyist puckOwner = findHockeyistById(puckOwnerId);
                 // TODO: unhardcode
-                if (!puckOwner.isTeammate() && defensePoint.sqrDist(puckOwner) < 160000) {
+                if (!puckOwner.isTeammate() && defensePoint.distance(puckOwner) < 400) {
                     if (isPuckReachable()) {
                         // TODO: try TAKE_PUCK when the probability is high
                         return new Result(Do.STRIKE, goToUnit(puck));
@@ -93,6 +93,7 @@ public class MakeTurn {
                     }
                 }
 */
+
                 if (world.getTick() - team.lastGoalTick < 50) {
                     return new Result(Do.NONE, Go.go(1, game.getRandomSeed() % 2 == 0 ? -1 : 1));
                 }
@@ -160,8 +161,7 @@ public class MakeTurn {
     private Do tryHitNearbyEnemies() {
         if (self.getRemainingCooldownTicks() > 0) return Do.NONE;
         for (Hockeyist hockeyist : world.getHockeyists()) {
-            if (hockeyist.isTeammate()) continue;
-            if (hockeyist.getType() == HockeyistType.GOALIE) continue;
+            if (hockeyist.isTeammate() || hockeyist.getType() == HockeyistType.GOALIE) continue;
             if (isReachable(hockeyist)) return Do.STRIKE;
         }
         return Do.NONE;
