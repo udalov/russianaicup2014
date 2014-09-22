@@ -98,6 +98,17 @@ public class MakeTurn {
                     return new Result(Do.NONE, Go.go(1, game.getRandomSeed() % 2 == 0 ? -1 : 1));
                 }
 
+                if (enemyHasNoGoalkeeper()) {
+                    Player opponent = world.getOpponentPlayer();
+                    Point target = Point.of(opponent.getNetFront(), (opponent.getNetTop() + opponent.getNetBottom()) / 2);
+                    double angle = self.getAngleTo(target.x, target.y);
+                    if (Math.abs(angle) < PI / 50 && abs(me.x - opponent.getNetFront()) > 100) {
+                        return Result.SWING;
+                    } else {
+                        return new Result(Do.NONE, Go.go(stop(), angle));
+                    }
+                }
+
                 Point attackPoint = determineAttackPoint();
                 // TODO: unhardcode
                 if (attackPoint.sqrDist(self) > 10000) {
@@ -114,6 +125,13 @@ public class MakeTurn {
                 }
             }
         }
+    }
+
+    private boolean enemyHasNoGoalkeeper() {
+        for (Hockeyist hockeyist : world.getHockeyists()) {
+            if (!hockeyist.isTeammate() && hockeyist.getType() == HockeyistType.GOALIE) return false;
+        }
+        return true;
     }
 
     @NotNull
