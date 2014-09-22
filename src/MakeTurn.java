@@ -108,7 +108,7 @@ public class MakeTurn {
                     if (Math.abs(angle) < PI / 180) {
                         return Result.SWING;
                     } else {
-                        return new Result(Do.NONE, Go.go(0, angle));
+                        return new Result(Do.NONE, Go.go(stop(), angle));
                     }
                 }
             }
