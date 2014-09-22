@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Team {
-    public final Player myPlayer;
+    public final Player myStartingPlayer;
 
     private final Game game;
 
@@ -14,11 +14,13 @@ public class Team {
     private int currentTick = -1;
     private final List<Decision> decisions;
 
+    public int lastGoalTick;
+
     public Team(@NotNull Game game, @NotNull World startingWorld) {
         this.game = game;
 
-        myPlayer = startingWorld.getMyPlayer();
-        attack = myPlayer.getNetFront() < (game.getRinkLeft() + game.getRinkRight()) / 2 ? 1 : -1;
+        myStartingPlayer = startingWorld.getMyPlayer();
+        attack = myStartingPlayer.getNetFront() < (game.getRinkLeft() + game.getRinkRight()) / 2 ? 1 : -1;
 
         decisions = new ArrayList<>(countControllablePlayers(startingWorld));
     }
@@ -35,6 +37,10 @@ public class Team {
         if (currentTick == world.getTick()) return;
         currentTick = world.getTick();
         decisions.clear();
+
+        if (world.getMyPlayer().isJustMissedGoal() || world.getMyPlayer().isJustScoredGoal()) {
+            lastGoalTick = currentTick;
+        }
 
         List<Hockeyist> myFieldPlayers = myFieldPlayers(world);
         Point defensePoint = determineDefensePoint(world);
@@ -118,7 +124,7 @@ public class Team {
         // TODO: radius can be different for different hockeyists
         double radius = world.getHockeyists()[0].getRadius();
 
-        return Point.of(myPlayer.getNetFront() + attack * (radius * 3.2), (myPlayer.getNetTop() + myPlayer.getNetBottom()) / 2);
+        return Point.of(myStartingPlayer.getNetFront() + attack * (radius * 3.2), (myStartingPlayer.getNetTop() + myStartingPlayer.getNetBottom()) / 2);
     }
 
     @NotNull

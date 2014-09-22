@@ -93,7 +93,7 @@ public class MakeTurn {
                     }
                 }
 */
-                if (world.getTick() < 50) {
+                if (world.getTick() - team.lastGoalTick < 50) {
                     return new Result(Do.NONE, Go.go(1, game.getRandomSeed() % 2 == 0 ? -1 : 1));
                 }
 
@@ -187,7 +187,7 @@ public class MakeTurn {
 
     @NotNull
     private Point whereEnemyWillStrike() {
-        double x = team.myPlayer.getNetFront() - team.attack * game.getGoalNetWidth() / 2;
+        double x = team.myStartingPlayer.getNetFront() - team.attack * game.getGoalNetWidth() / 2;
         double y = puck.getY() < (game.getRinkTop() + game.getRinkBottom()) / 2
                    ? game.getGoalNetTop()
                    : game.getGoalNetTop() + game.getGoalNetHeight();
