@@ -34,7 +34,7 @@ public class MyStrategy implements Strategy {
     @Nullable
     private static Team findTeam(@NotNull Player player) {
         for (Team team : TEAMS) {
-            if (team.myPlayer.getId() == player.getId()) return team;
+            if (team.myStartingPlayer.getId() == player.getId()) return team;
         }
         return null;
     }
