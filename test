@@ -2,16 +2,18 @@
 
 set -e
 
-ticks_count=6000
+ticks=6000
+team1=my
+team2=old
 
-for seed in `seq 1 50`
+for seed in `seq 100 149`
 do
     echo -n "$seed "
-    java -jar dist/russianaicup.jar old my $ticks_count $seed
+    java -jar dist/russianaicup.jar $team1 $team2 $ticks $seed
 done
 
-for seed in `seq 51 100`
+for seed in `seq 150 199`
 do
     echo -n "$seed "
-    java -jar dist/russianaicup.jar my old $ticks_count $seed
+    java -jar dist/russianaicup.jar $team2 $team1 $ticks $seed
 done
