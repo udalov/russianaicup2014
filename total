@@ -1,0 +1,3 @@
+#!/bin/bash
+
+cat out/test-log.txt | cut -d ' ' -f 3 | tr ':' ' ' | awk '{win+=$1;lose+=$2} END {print win,lose}'

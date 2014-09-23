@@ -6,14 +6,20 @@ ticks=6000
 team1=my
 team2=old
 
+log=out/test-log.txt
+if [ -f $log ];
+then
+    mv $log $log.bak
+else
+    mkdir -p `dirname $log`
+fi
+
 for seed in `seq 100 149`
 do
-    echo -n "$seed "
-    java -jar dist/russianaicup.jar $team1 $team2 $ticks $seed
+    java -jar dist/russianaicup.jar $team1 $team2 $ticks $seed | sed "s/^/$seed /" | tee -a $log
 done
 
 for seed in `seq 150 199`
 do
-    echo -n "$seed "
-    java -jar dist/russianaicup.jar $team2 $team1 $ticks $seed
+    java -jar dist/russianaicup.jar $team2 $team1 $ticks $seed | sed "s/^/$seed /" | tee -a $log
 done
