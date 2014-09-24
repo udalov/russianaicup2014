@@ -23,6 +23,8 @@ public class Team {
         attack = myStartingPlayer.getNetFront() < (game.getRinkLeft() + game.getRinkRight()) / 2 ? 1 : -1;
 
         decisions = new ArrayList<>(countControllablePlayers(startingWorld));
+
+        GameConst.initialize(game);
     }
 
     private static int countControllablePlayers(@NotNull World startingWorld) {

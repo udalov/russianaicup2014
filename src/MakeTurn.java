@@ -98,9 +98,11 @@ public class MakeTurn {
                 }
 */
 
+/*
                 if (world.getTick() - team.lastGoalTick < 50) {
                     return new Result(Do.NONE, Go.go(1, game.getRandomSeed() % 2 == 0 ? -1 : 1));
                 }
+*/
 
                 if (enemyHasNoGoalkeeper()) {
                     Player opponent = world.getOpponentPlayer();
@@ -116,8 +118,26 @@ public class MakeTurn {
                 Point attackPoint = determineAttackPoint();
                 // TODO: unhardcode
                 if (attackPoint.sqrDist(self) > 10000) {
+                    State state = State.of(self, world);
+                    double bestGoResult = Double.MIN_VALUE;
+                    Go bestGo = null;
+                    for (Go go : Arrays.asList(
+                            Go.go(1, 1), Go.go(1, -1), Go.go(1, 0), Go.go(1, 0.5), Go.go(1, -0.5)
+                            //TODO: ,Go.go(0, 1), Go.go(0, -1), Go.go(0, 0), Go.go(0, 0.5), Go.go(0, -0.5)
+                            //TODO: ,Go.go(-1, 1), Go.go(-1, -1), Go.go(-1, 0), Go.go(-1, 0.5), Go.go(-1, -0.5)
+                    )) {
+                        double cur = evaluate(state, go, attackPoint);
+                        if (bestGo == null || cur > bestGoResult) {
+                            bestGoResult = cur;
+                            bestGo = go;
+                        }
+                    }
+                    assert bestGo != null;
+                    return new Result(Do.NONE, bestGo);
+/*
                     double angle = self.getAngleTo(attackPoint.x, attackPoint.y);
                     return new Result(Do.NONE, Go.go(abs(angle) < PI / 2 ? 1 : stop(), angle));
+*/
                 } else {
                     Point target = determineGoalPoint();
                     double angle = self.getAngleTo(target.x, target.y);
@@ -195,6 +215,56 @@ public class MakeTurn {
         throw new AssertionError("Invisible hockeyist: " + id + ", world: " + Arrays.toString(world.getHockeyists()));
     }
 
+    private double evaluate(@NotNull State currentState, @NotNull Go go, @NotNull Point attackPoint) {
+        double score = 0;
+        State state = currentState.apply(go);
+        score += evaluate(state, attackPoint);
+
+        for (int t = 2; t <= 10; t++) {
+            state = state.apply(Go.go(0, 0));
+            score += evaluate(state, attackPoint) / t / 2;
+        }
+
+        return score;
+    }
+
+    private double evaluate(@NotNull State state, @NotNull Point attackPoint) {
+        double penalty = 0;
+
+        Position myPosition = state.pos[state.myIndex];
+        Point me = myPosition.point();
+        double angle = myPosition.angle;
+
+        penalty += me.distance(attackPoint);
+
+        double dangerousAngle = PI / 2;
+
+        for (int i = 0; i < state.unit.length; i++) {
+            if (!(state.unit[i] instanceof Hockeyist)) continue;
+            Hockeyist hockeyist = (Hockeyist) state.unit[i];
+            if (hockeyist.isTeammate() || hockeyist.getType() == HockeyistType.GOALIE) continue;
+            Position enemy = state.pos[i];
+
+            double angleToEnemy = Util.angleDiff(angle, atan2(enemy.y - me.y, enemy.x - me.x));
+            if (abs(angleToEnemy) > dangerousAngle) continue;
+
+            double distance = me.distance(enemy.point());
+            double convergenceSpeed = myPosition.speed().minus(enemy.speed()).length();
+            if (distance > 150 && convergenceSpeed < 20) continue;
+
+            if (distance < 150) penalty += sqrt(150 - distance);
+
+            penalty += -150 / dangerousAngle * abs(angleToEnemy) + 150;
+        }
+
+        penalty += Util.sqr(max(game.getRinkLeft() - me.x, 0)) * 10;
+        penalty += Util.sqr(max(me.x - game.getRinkRight(), 0)) * 10;
+        penalty += Util.sqr(max(game.getRinkTop() - me.y, 0)) * 10;
+        penalty += Util.sqr(max(me.y - game.getRinkBottom(), 0)) * 10;
+
+        return -penalty;
+    }
+
     @NotNull
     private Do tryHitNearbyEnemies() {
         if (self.getRemainingCooldownTicks() > 0) return Do.NONE;
@@ -240,7 +310,7 @@ public class MakeTurn {
 
     private double stop() {
         if (speed(self) < 1.0) return 0.0;
-        return angleDiff(atan2(self.getSpeedY(), self.getSpeedX()), self.getAngle()) > PI / 2 ? 1.0 : -1.0;
+        return Util.angleDiff(atan2(self.getSpeedY(), self.getSpeedX()), self.getAngle()) > PI / 2 ? 1.0 : -1.0;
     }
 
     @NotNull
@@ -270,10 +340,6 @@ public class MakeTurn {
             }
             return Go.go(speed < 1.0 ? 0.0 : 1, turn);
         }
-    }
-
-    private static double angleDiff(double a, double b) {
-        return abs(atan2(sin(a - b), cos(a - b)));
     }
 
     public static double speed(@NotNull Unit unit) {
