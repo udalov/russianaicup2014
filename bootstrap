@@ -22,7 +22,14 @@ cp -r runner/*.java $output/src/
 
 du -hs $output
 
-javac -g:none -target 1.7 -source 1.7 $output/src/*.java $output/src/model/*.java -d $output
+javac -encoding utf8 -g:none -target 1.7 -source 1.7 $output/src/*.java $output/src/model/*.java -d $output
 
-rm -f out/bootstrap
-ln -s $rev out/bootstrap
+bootstrap=out/bootstrap
+if [[ `uname` == MINGW* ]]
+then
+    rm -rf $bootstrap
+    cp -r $output $bootstrap
+else
+    rm -f $bootstrap
+    ln -s $rev $bootstrap
+fi
