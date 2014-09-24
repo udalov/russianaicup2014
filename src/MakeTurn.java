@@ -70,12 +70,12 @@ public class MakeTurn {
         } else {
             if (self.getState() == HockeyistState.SWINGING) {
                 if (puckOwnerId != self.getId()) return new Result(Do.CANCEL_STRIKE, Go.go(stop(), 0));
-                Point attackPoint = determineAttackPoint();
-                double angle = self.getAngleTo(attackPoint.x, attackPoint.y);
                 if (self.getSwingTicks() < 15 && safeToSwingMore()) {
                     return Result.SWING;
+                } else {
+                    Point goalPoint = determineGoalPoint();
+                    return new Result(Do.STRIKE, Go.go(stop(), self.getAngleTo(goalPoint.x, goalPoint.y)));
                 }
-                return new Result(Do.STRIKE, Go.go(stop(), angle));
             }
 
             if (puckOwnerId == -1) {
@@ -198,7 +198,7 @@ public class MakeTurn {
 
     @NotNull
     private Point determineGoalPoint() {
-        double x = world.getOpponentPlayer().getNetFront() + team.attack * game.getGoalNetWidth() / 2;
+        double x = (world.getOpponentPlayer().getNetFront() + world.getOpponentPlayer().getNetBack()) / 2;
 
         double y = me.y < (game.getRinkTop() + game.getRinkBottom()) / 2
                    ? game.getGoalNetTop() + game.getGoalNetHeight()
