@@ -5,6 +5,7 @@
       <module fileurl="file://$PROJECT_DIR$/auxiliary/auxiliary.iml" filepath="$PROJECT_DIR$/auxiliary/auxiliary.iml" />
       <module fileurl="file://$PROJECT_DIR$/local/local.iml" filepath="$PROJECT_DIR$/local/local.iml" />
       <module fileurl="file://$PROJECT_DIR$/model/model.iml" filepath="$PROJECT_DIR$/model/model.iml" />
+      <module fileurl="file://$PROJECT_DIR$/plugins/plugins.iml" filepath="$PROJECT_DIR$/plugins/plugins.iml" />
       <module fileurl="file://$PROJECT_DIR$/runner/runner.iml" filepath="$PROJECT_DIR$/runner/runner.iml" />
       <module fileurl="file://$PROJECT_DIR$/russianaicup.iml" filepath="$PROJECT_DIR$/russianaicup.iml" />
       <module fileurl="file://$PROJECT_DIR$/src/src.iml" filepath="$PROJECT_DIR$/src/src.iml" />

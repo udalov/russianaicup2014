@@ -3,16 +3,11 @@
   <component name="NewModuleRootManager" inherit-compiler-output="true">
     <exclude-output />
     <content url="file://$MODULE_DIR$">
-      <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$" isTestSource="false" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="library" name="KotlinJavaRuntime" level="project" />
-    <orderEntry type="module" module-name="runner" />
-    <orderEntry type="module" module-name="src" />
-    <orderEntry type="library" name="local-runner" level="project" />
-    <orderEntry type="module" module-name="plugins" scope="RUNTIME" />
+    <orderEntry type="module" module-name="model" />
   </component>
 </module>
 

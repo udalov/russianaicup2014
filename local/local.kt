@@ -29,7 +29,9 @@ fun localRunner(vis: Boolean, ticks: Int, seed: Long, players: List<Player>): Ru
             "-results-file=$LOG_FILE",
             "-debug=true",
             "-base-adapter-port=31001",
-            "-seed=$seed"
+            "-seed=$seed",
+            "-swap-sides=false",
+            "-plugins-directory=out/production/plugins"
     )
 
     for ((index, player) in players.withIndices()) {
