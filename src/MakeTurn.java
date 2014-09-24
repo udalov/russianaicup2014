@@ -154,7 +154,7 @@ public class MakeTurn {
     }
 
     private boolean safeToSwingMore() {
-        if (speed(self) > 2) return false;
+        if (speed(self) > 4) return false;
         for (Hockeyist enemy : world.getHockeyists()) {
             if (enemy.isTeammate() || enemy.getType() == HockeyistType.GOALIE) continue;
             if (isReachable(enemy, puck) || isReachable(enemy, self)) return false;
