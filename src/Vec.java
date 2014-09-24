@@ -47,6 +47,11 @@ public class Vec {
         return abs(length()) < 1e-9 ? this : divide(length());
     }
 
+    @NotNull
+    public Vec project(@NotNull Vec other) {
+        return other.normalize().multiply(this.innerProduct(other) / other.length());
+    }
+
     public double angle() {
         return atan2(y, x);
     }

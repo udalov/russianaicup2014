@@ -5,6 +5,13 @@ import java.util.Arrays;
 import static java.lang.StrictMath.*;
 
 public class MakeTurn {
+    private static final Point[] CORNERS = {
+            Point.of(GameConst.rinkLeft, GameConst.rinkTop),
+            Point.of(GameConst.rinkLeft, GameConst.rinkBottom),
+            Point.of(GameConst.rinkRight, GameConst.rinkTop),
+            Point.of(GameConst.rinkRight, GameConst.rinkBottom)
+    };
+
     private final Team team;
     private final Hockeyist self;
     private final World world;
@@ -232,8 +239,9 @@ public class MakeTurn {
         double penalty = 0;
 
         Position myPosition = state.pos[state.myIndex];
+        Vec mySpeed = myPosition.speed();
         Point me = myPosition.point();
-        double angle = myPosition.angle;
+        double myAngle = myPosition.angle;
 
         penalty += me.distance(attackPoint);
 
@@ -245,11 +253,11 @@ public class MakeTurn {
             if (hockeyist.isTeammate() || hockeyist.getType() == HockeyistType.GOALIE) continue;
             Position enemy = state.pos[i];
 
-            double angleToEnemy = Util.angleDiff(angle, atan2(enemy.y - me.y, enemy.x - me.x));
+            double angleToEnemy = Util.angleDiff(myAngle, atan2(enemy.y - me.y, enemy.x - me.x));
             if (abs(angleToEnemy) > dangerousAngle) continue;
 
             double distance = me.distance(enemy.point());
-            double convergenceSpeed = myPosition.speed().minus(enemy.speed()).length();
+            double convergenceSpeed = mySpeed.minus(enemy.speed()).length(); // TODO: this is wrong
             if (distance > 150 && convergenceSpeed < 20) continue;
 
             if (distance < 150) penalty += sqrt(150 - distance);
@@ -261,6 +269,13 @@ public class MakeTurn {
         penalty += Util.sqr(max(me.x - game.getRinkRight(), 0)) * 10;
         penalty += Util.sqr(max(game.getRinkTop() - me.y, 0)) * 10;
         penalty += Util.sqr(max(me.y - game.getRinkBottom(), 0)) * 10;
+
+        // penalty += pow(max(15 - mySpeed.project(myPosition.direction()).length(), 0), 1.1);
+
+        for (Point corner : CORNERS) {
+            // TODO: investigate if it works as expected
+            penalty += Util.sqr(max(150 - me.distance(corner), 0));
+        }
 
         return -penalty;
     }
