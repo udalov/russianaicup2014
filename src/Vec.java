@@ -1,3 +1,5 @@
+import model.Unit;
+
 import static java.lang.StrictMath.*;
 
 public class Vec {
@@ -12,6 +14,11 @@ public class Vec {
     @NotNull
     public static Vec of(double x, double y) {
         return new Vec(x, y);
+    }
+
+    @NotNull
+    public static Vec speedOf(@NotNull Unit unit) {
+        return new Vec(unit.getSpeedX(), unit.getSpeedY());
     }
 
     @NotNull
