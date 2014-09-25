@@ -6,15 +6,17 @@ import static java.lang.StrictMath.*;
 
 public class MakeTurn {
     private static final Point[] CORNERS = {
-            Point.of(GameConst.rinkLeft, GameConst.rinkTop),
-            Point.of(GameConst.rinkLeft, GameConst.rinkBottom),
-            Point.of(GameConst.rinkRight, GameConst.rinkTop),
-            Point.of(GameConst.rinkRight, GameConst.rinkBottom)
+            Point.of(Const.rinkLeft, Const.rinkTop),
+            Point.of(Const.rinkLeft, Const.rinkBottom),
+            Point.of(Const.rinkRight, Const.rinkTop),
+            Point.of(Const.rinkRight, Const.rinkBottom)
     };
 
     private final Team team;
     private final Hockeyist self;
     private final World world;
+
+    @SuppressWarnings({"FieldCanBeLocal", "UnusedDeclaration"}) // Maybe use randomSeed
     private final Game game;
 
     private final Point me;
@@ -34,7 +36,7 @@ public class MakeTurn {
     public Result makeTurn() {
         Player myPlayer = world.getMyPlayer();
         if (myPlayer.isJustScoredGoal() || myPlayer.isJustMissedGoal()) {
-            return new Result(Do.STRIKE, Go.go(0.0, game.getHockeyistTurnAngleFactor()));
+            return new Result(Do.STRIKE, Go.go(0.0, Const.hockeyistTurnAngleFactor));
         }
 
         long puckOwnerId = puck.getOwnerHockeyistId();
@@ -145,7 +147,7 @@ public class MakeTurn {
                     double angle = self.getAngleTo(target.x, target.y);
                     if (abs(angle) < PI / 180) {
                         return Result.SWING;
-                    } else if (-game.getPassSector() / 2 < abs(angle) && abs(angle) < game.getPassSector() / 2) {
+                    } else if (-Const.passSector / 2 < abs(angle) && abs(angle) < Const.passSector / 2) {
                         return new Result(Do.pass(1, angle), Go.go(stop(), angle));
                     } else {
                         return new Result(Do.NONE, Go.go(stop(), angle));
@@ -184,11 +186,11 @@ public class MakeTurn {
     @NotNull
     private Point determineAttackPoint() {
         // TODO: unhardcode
-        double x = (game.getRinkLeft() + game.getRinkRight()) / 2 + team.attack * 272.0;
+        double x = (Const.rinkLeft + Const.rinkRight) / 2 + team.attack * 272.0;
 
-        double y = me.y < (game.getRinkTop() + game.getRinkBottom()) / 2
-                   ? game.getGoalNetTop() - game.getGoalNetHeight() / 6
-                   : game.getGoalNetTop() + game.getGoalNetHeight() + game.getGoalNetHeight() / 6;
+        double y = me.y < (Const.rinkTop + Const.rinkBottom) / 2
+                   ? Const.goalNetTop - Const.goalNetHeight / 6
+                   : Const.goalNetTop + Const.goalNetHeight + Const.goalNetHeight / 6;
 
         return Point.of(x, y);
     }
@@ -197,9 +199,9 @@ public class MakeTurn {
     private Point determineGoalPoint() {
         double x = (world.getOpponentPlayer().getNetFront() + world.getOpponentPlayer().getNetBack()) / 2;
 
-        double y = me.y < (game.getRinkTop() + game.getRinkBottom()) / 2
-                   ? game.getGoalNetTop() + game.getGoalNetHeight()
-                   : game.getGoalNetTop();
+        double y = me.y < (Const.rinkTop + Const.rinkBottom) / 2
+                   ? Const.goalNetTop + Const.goalNetHeight
+                   : Const.goalNetTop;
 
         return Point.of(x, y);
     }
@@ -212,7 +214,7 @@ public class MakeTurn {
         throw new AssertionError("Invisible hockeyist: " + id + ", world: " + Arrays.toString(world.getHockeyists()));
     }
 
-    private double evaluate(@NotNull State currentState, @NotNull Go go, @NotNull Point attackPoint) {
+    private static double evaluate(@NotNull State currentState, @NotNull Go go, @NotNull Point attackPoint) {
         double score = 0;
         State state = currentState.apply(go);
         score += evaluate(state, attackPoint);
@@ -225,7 +227,7 @@ public class MakeTurn {
         return score;
     }
 
-    private double evaluate(@NotNull State state, @NotNull Point attackPoint) {
+    private static double evaluate(@NotNull State state, @NotNull Point attackPoint) {
         double penalty = 0;
 
         Position myPosition = state.pos[state.myIndex];
@@ -256,10 +258,10 @@ public class MakeTurn {
             penalty += -150 / dangerousAngle * abs(angleToEnemy) + 150;
         }
 
-        penalty += Util.sqr(max(game.getRinkLeft() - me.x, 0)) * 10;
-        penalty += Util.sqr(max(me.x - game.getRinkRight(), 0)) * 10;
-        penalty += Util.sqr(max(game.getRinkTop() - me.y, 0)) * 10;
-        penalty += Util.sqr(max(me.y - game.getRinkBottom(), 0)) * 10;
+        penalty += Util.sqr(max(Const.rinkLeft - me.x, 0)) * 10;
+        penalty += Util.sqr(max(me.x - Const.rinkRight, 0)) * 10;
+        penalty += Util.sqr(max(Const.rinkTop - me.y, 0)) * 10;
+        penalty += Util.sqr(max(me.y - Const.rinkBottom, 0)) * 10;
 
         // penalty += pow(max(15 - mySpeed.project(myPosition.direction()).length(), 0), 1.1);
 
@@ -301,18 +303,18 @@ public class MakeTurn {
         return isReachable(self, unit);
     }
 
-    private boolean isReachable(@NotNull Hockeyist from, @NotNull Unit unit) {
+    private static boolean isReachable(@NotNull Hockeyist from, @NotNull Unit unit) {
         double angle = from.getAngleTo(unit);
-        return from.getDistanceTo(unit) <= game.getStickLength() &&
-               -game.getStickSector() / 2 <= angle && angle <= game.getStickSector() / 2;
+        return from.getDistanceTo(unit) <= Const.stickLength &&
+               -Const.stickSector / 2 <= angle && angle <= Const.stickSector / 2;
     }
 
     @NotNull
     private Point whereEnemyWillStrike() {
-        double x = team.myStartingPlayer.getNetFront() - team.attack * game.getGoalNetWidth() / 2;
-        double y = puck.getY() < (game.getRinkTop() + game.getRinkBottom()) / 2
-                   ? game.getGoalNetTop()
-                   : game.getGoalNetTop() + game.getGoalNetHeight();
+        double x = team.myStartingPlayer.getNetFront() - team.attack * Const.goalNetWidth / 2;
+        double y = puck.getY() < (Const.rinkTop + Const.rinkBottom) / 2
+                   ? Const.goalNetTop
+                   : Const.goalNetTop + Const.goalNetHeight;
         return Point.of(x, y);
     }
 
@@ -330,7 +332,7 @@ public class MakeTurn {
         boolean closeBy = distance < speed * speed / 2;
 
         // TODO: unhardcode
-        double eps = 2 * game.getHockeyistTurnAngleFactor();
+        double eps = 2 * Const.hockeyistTurnAngleFactor;
 
         // TODO: unhardcode
         if (abs(alpha) < PI / 2) {

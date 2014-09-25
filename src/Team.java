@@ -1,12 +1,13 @@
-import model.*;
+import model.Hockeyist;
+import model.HockeyistType;
+import model.Player;
+import model.World;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class Team {
     public final Player myStartingPlayer;
-
-    private final Game game;
 
     // 1 if we are on the left, -1 if we are on the right
     public final int attack;
@@ -16,15 +17,11 @@ public class Team {
 
     public int lastGoalTick;
 
-    public Team(@NotNull Game game, @NotNull World startingWorld) {
-        this.game = game;
-
+    public Team(@NotNull World startingWorld) {
         myStartingPlayer = startingWorld.getMyPlayer();
-        attack = myStartingPlayer.getNetFront() < (game.getRinkLeft() + game.getRinkRight()) / 2 ? 1 : -1;
+        attack = myStartingPlayer.getNetFront() < (Const.rinkLeft + Const.rinkRight) / 2 ? 1 : -1;
 
         decisions = new ArrayList<>(countControllablePlayers(startingWorld));
-
-        GameConst.initialize(game);
     }
 
     private static int countControllablePlayers(@NotNull World startingWorld) {
