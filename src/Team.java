@@ -13,23 +13,13 @@ public class Team {
     public final int attack;
 
     private int currentTick = -1;
-    private final List<Decision> decisions;
+    private final List<Decision> decisions = new ArrayList<>(3);
 
     public int lastGoalTick;
 
     public Team(@NotNull World startingWorld) {
         myStartingPlayer = startingWorld.getMyPlayer();
         attack = myStartingPlayer.getNetFront() < (Const.rinkLeft + Const.rinkRight) / 2 ? 1 : -1;
-
-        decisions = new ArrayList<>(countControllablePlayers(startingWorld));
-    }
-
-    private static int countControllablePlayers(@NotNull World startingWorld) {
-        int result = 0;
-        for (Hockeyist hockeyist : startingWorld.getHockeyists()) {
-            if (hockeyist.isTeammate() && hockeyist.getType() != HockeyistType.GOALIE) result++;
-        }
-        return result;
     }
 
     public void solveTick(@NotNull World world) {
@@ -94,7 +84,6 @@ public class Team {
         Hockeyist bestPlayer = null;
         for (Hockeyist hockeyist : world.getHockeyists()) {
             // TODO: take into account his speed direction, time to turn, etc.
-            // TODO: hockeyists have max speed
             // s = v0*t + t^2/2
             // t = sqrt(v0^2 + 2*s) - v0
             double s = hockeyist.getDistanceTo(world.getPuck());
