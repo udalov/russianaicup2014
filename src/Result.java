@@ -9,6 +9,11 @@ public class Result {
         this.direction = direction;
     }
 
+    @NotNull
+    public static Result debugDoNothing() {
+        return new Result(Do.NONE, Go.go(0, 0));
+    }
+
     @Override
     public String toString() {
         return action + ", " + direction;

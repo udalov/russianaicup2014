@@ -52,7 +52,7 @@ public class Team {
         // TODO: do this even if the puck is owned by an enemy attacker, to tackle him
         if (puckOwnerPlayerId == -1 && findClosestGlobalPlayerToPuck(world) == closestToDefend) {
             // TODO: unhardcode
-            if (closestToDefend.getDistanceTo(world.getPuck()) < 300) {
+            if (closestToDefend.getDistanceTo(world.getPuck()) < 500) {
                 List<Hockeyist> possibleDefenders = new ArrayList<>(myFieldPlayers);
                 possibleDefenders.remove(closestToDefend);
                 defender = findClosestToPoint(possibleDefenders, defensePoint);
