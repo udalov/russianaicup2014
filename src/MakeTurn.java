@@ -119,6 +119,12 @@ public class MakeTurn {
                     }
                 }
 
+                if (abs(self.getAngle()) > 3 * PI / 4 && team.attack == 1 ||
+                    abs(self.getAngle()) < PI / 4 && team.attack == -1) {
+                    Do pass = tryPass();
+                    if (pass != null) return new Result(pass, Go.go(0, 0));
+                }
+
                 Point attackPoint = determineAttackPoint();
                 // TODO: unhardcode
                 if (attackPoint.sqrDist(self) > 10000) {
@@ -155,6 +161,21 @@ public class MakeTurn {
                 }
             }
         }
+    }
+
+    @Nullable
+    private Do tryPass() {
+        if (self.getRemainingCooldownTicks() > 0 || self.getRemainingKnockdownTicks() > 0) return null;
+        for (Hockeyist ally : world.getHockeyists()) {
+            if (!ally.isTeammate() || ally.getType() == HockeyistType.GOALIE || ally.getId() == self.getId()) continue;
+            double angle = self.getAngleTo(ally);
+            if (-game.getPassSector() / 2 < angle && angle < game.getPassSector() / 2) {
+                if (Util.angleDiff(self.getAngle(), ally.getAngle()) > 2 * PI / 3) {
+                    return Do.pass(min(400.0 / self.getDistanceTo(ally), 1.0), angle);
+                }
+            }
+        }
+        return null;
     }
 
     private boolean safeToSwingMore() {
