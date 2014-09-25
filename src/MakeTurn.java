@@ -147,7 +147,7 @@ public class MakeTurn {
                     double angle = self.getAngleTo(target.x, target.y);
                     if (abs(angle) < PI / 180) {
                         return Result.SWING;
-                    } else if (-Const.passSector / 2 < abs(angle) && abs(angle) < Const.passSector / 2) {
+                    } else if (-Const.passSector / 5 < abs(angle) && abs(angle) < Const.passSector / 5) {
                         return new Result(Do.pass(1, angle), Go.go(stop(), angle));
                     } else {
                         return new Result(Do.NONE, Go.go(stop(), angle));
