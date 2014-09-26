@@ -37,10 +37,11 @@ public class MakeTurn {
 
     @NotNull
     public Result makeTurn() {
+        if (self.getRemainingKnockdownTicks() > 0) return new Result(Do.NONE, Go.go(0, 0));
+
         Player myPlayer = world.getMyPlayer();
-        if (myPlayer.isJustScoredGoal() || myPlayer.isJustMissedGoal()) {
-            return new Result(Do.STRIKE, Go.go(0.0, Const.hockeyistTurnAngleFactor));
-        }
+        if (myPlayer.isJustScoredGoal()) return winningDance();
+        if (myPlayer.isJustMissedGoal()) return losingDance();
 
         long puckOwnerId = puck.getOwnerHockeyistId();
 
@@ -174,9 +175,30 @@ public class MakeTurn {
         }
     }
 
+    @NotNull
+    private Result losingDance() {
+        Hockeyist closestEnemy = null;
+        double bestDistance = Double.MAX_VALUE;
+        for (Hockeyist hockeyist : world.getHockeyists()) {
+            if (hockeyist.isTeammate() || hockeyist.getType() == HockeyistType.GOALIE) continue;
+            double cur = self.getDistanceTo(hockeyist);
+            if (cur < bestDistance) {
+                bestDistance = cur;
+                closestEnemy = hockeyist;
+            }
+        }
+        if (closestEnemy == null) return new Result(Do.NONE, Go.go(0, Const.hockeyistTurnAngleFactor));
+        return new Result(isReachable(closestEnemy) ? Do.STRIKE : Do.NONE, Go.go(1, self.getAngleTo(closestEnemy)));
+    }
+
+    @NotNull
+    private static Result winningDance() {
+        return new Result(Do.NONE, Go.go(0, Const.hockeyistTurnAngleFactor));
+    }
+
     @Nullable
     private Do tryPass() {
-        if (self.getRemainingCooldownTicks() > 0 || self.getRemainingKnockdownTicks() > 0) return null;
+        if (self.getRemainingCooldownTicks() > 0) return null;
         for (Hockeyist ally : world.getHockeyists()) {
             if (!ally.isTeammate() || ally.getType() == HockeyistType.GOALIE || ally.getId() == self.getId()) continue;
             double angle = self.getAngleTo(ally);
