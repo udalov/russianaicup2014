@@ -107,6 +107,7 @@ public class Const {
                 Object actualValue = method.invoke(game);
                 if (!expectedValue.equals(actualValue)) {
                     System.err.println("field " + name + " expected " + expectedValue + " actual " + actualValue);
+                    field.set(null, actualValue);
                 }
             }
         } catch (Throwable ignored) { }
