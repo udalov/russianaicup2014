@@ -281,8 +281,7 @@ public class MakeTurn {
             if (abs(angleToEnemy) > dangerousAngle) continue;
 
             double distance = me.distance(enemy.point());
-            Vec convergence = mySpeed.minus(enemy.speed().project(mySpeed));
-            double convergenceSpeed = abs(mySpeed.x) < 1e-6 ? 0 : convergence.x / mySpeed.x; // TODO: check this
+            double convergenceSpeed = abs(mySpeed.x) < 1e-6 ? 0 : 1 - enemy.speed().projection(mySpeed);
             if (distance > 150 && convergenceSpeed < 20) continue;
 
             if (distance < 150) penalty += sqrt(150 - distance);
