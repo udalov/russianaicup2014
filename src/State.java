@@ -34,6 +34,11 @@ public class State {
     }
 
     @NotNull
+    public Hockeyist self() {
+        return (Hockeyist) unit[myIndex];
+    }
+
+    @NotNull
     public State apply(@NotNull Go go) {
         Position[] positions = Arrays.copyOf(pos, pos.length);
         Unit[] units = Arrays.copyOf(unit, unit.length);

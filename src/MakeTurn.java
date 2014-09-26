@@ -297,7 +297,7 @@ public class MakeTurn {
         for (int i = 0; i < state.unit.length; i++) {
             if (!(state.unit[i] instanceof Hockeyist)) continue;
             Hockeyist hockeyist = (Hockeyist) state.unit[i];
-            if (hockeyist.isTeammate() || hockeyist.getType() == HockeyistType.GOALIE) continue;
+            if (hockeyist.getId() == state.self().getId() || hockeyist.getType() == HockeyistType.GOALIE) continue;
             Position enemy = state.pos[i];
 
             double angleToEnemy = Util.angleDiff(myAngle, atan2(enemy.y - me.y, enemy.x - me.x));
@@ -307,9 +307,9 @@ public class MakeTurn {
             double convergenceSpeed = abs(mySpeed.x) < 1e-6 ? 0 : 1 - enemy.speed().projection(mySpeed);
             if (distance > 150 && convergenceSpeed < 20) continue;
 
-            if (distance < 150) penalty += sqrt(150 - distance);
+            if (!hockeyist.isTeammate() && distance < 150) penalty += sqrt(150 - distance);
 
-            penalty += -150 / dangerousAngle * abs(angleToEnemy) + 150;
+            penalty += (hockeyist.isTeammate() ? 30 : 150) * (1 - abs(angleToEnemy) / dangerousAngle);
         }
 
         double futureX = me.x + 10 * myDirection.x;
