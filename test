@@ -2,7 +2,7 @@
 
 set -e
 
-ticks=6000
+ticks=90000
 team1=my
 team2=old
 
