@@ -288,6 +288,7 @@ public class MakeTurn {
         Vec mySpeed = myPosition.speed();
         Point me = myPosition.point();
         double myAngle = myPosition.angle;
+        Vec myDirection = myPosition.direction();
 
         penalty += me.distance(attackPoint);
 
@@ -311,10 +312,12 @@ public class MakeTurn {
             penalty += -150 / dangerousAngle * abs(angleToEnemy) + 150;
         }
 
-        penalty += Util.sqr(max(Const.rinkLeft - me.x, 0)) * 10;
-        penalty += Util.sqr(max(me.x - Const.rinkRight, 0)) * 10;
-        penalty += Util.sqr(max(Const.rinkTop - me.y, 0)) * 10;
-        penalty += Util.sqr(max(me.y - Const.rinkBottom, 0)) * 10;
+        double futureX = me.x + 10 * myDirection.x;
+        double futureY = me.y + 10 * myDirection.y;
+        penalty += Util.sqr(max(Const.rinkLeft - futureX, 0)) * 10;
+        penalty += Util.sqr(max(futureX - Const.rinkRight, 0)) * 10;
+        penalty += Util.sqr(max(Const.rinkTop - futureY, 0)) * 10;
+        penalty += Util.sqr(max(futureY - Const.rinkBottom, 0)) * 10;
 
         // penalty += pow(max(15 - mySpeed.project(myPosition.direction()).length(), 0), 1.1);
 

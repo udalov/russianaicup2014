@@ -33,6 +33,11 @@ public class Position {
         return Vec.of(speedX, speedY);
     }
 
+    @NotNull
+    public Vec direction() {
+        return Vec.of(cos(angle), sin(angle));
+    }
+
     // TODO: all constants depend on the hockeyist's condition
     @NotNull
     public Position move(@NotNull Go go) {
