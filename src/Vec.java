@@ -17,6 +17,11 @@ public class Vec {
     }
 
     @NotNull
+    public static Vec of(@NotNull Point from, @NotNull Point to) {
+        return new Vec(to.x - from.x, to.y - from.y);
+    }
+
+    @NotNull
     public static Vec speedOf(@NotNull Unit unit) {
         return new Vec(unit.getSpeedX(), unit.getSpeedY());
     }
@@ -56,7 +61,11 @@ public class Vec {
 
     @NotNull
     public Vec project(@NotNull Vec other) {
-        return other.normalize().multiply(this.innerProduct(other) / other.length());
+        return other.normalize().multiply(projection(other));
+    }
+
+    public double projection(@NotNull Vec other) {
+        return this.innerProduct(other) / other.length();
     }
 
     public double angle() {

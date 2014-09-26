@@ -5,7 +5,10 @@ import java.util.Arrays;
 import static java.lang.StrictMath.*;
 
 public class MakeTurn {
-    private static final Point[] CORNERS = {
+    public static final Point CENTER =
+            Point.of((Const.rinkLeft + Const.rinkRight) / 2, (Const.rinkTop + Const.rinkBottom) / 2);
+
+    public static final Point[] CORNERS = {
             Point.of(Const.rinkLeft, Const.rinkTop),
             Point.of(Const.rinkLeft, Const.rinkBottom),
             Point.of(Const.rinkRight, Const.rinkTop),
@@ -47,20 +50,28 @@ public class MakeTurn {
         if (role == Decision.Role.DEFENSE) {
             Point defensePoint = decision.defensePoint;
 
-            if (self.getRemainingCooldownTicks() == 0 && puckOwnerId != -1) {
-                Hockeyist puckOwner = findHockeyistById(puckOwnerId);
-                // TODO: unhardcode
-                if (!puckOwner.isTeammate() && defensePoint.distance(puckOwner) < 400) {
-                    return new Result(tryHitNearbyEnemiesOrPuck(), goToUnit(puck));
+            // TODO: unhardcode
+            if (defensePoint.distance(self) > 300) {
+                return new Result(tryBlockPuck(), land(defensePoint));
+            }
+
+            if (self.getRemainingCooldownTicks() == 0) {
+                if (puckOwnerId == -1 || !findHockeyistById(puckOwnerId).isTeammate()) {
+                    double distanceToPuck = defensePoint.distance(puck);
+                    double puckSpeedAgainstOurGoal = Vec.speedOf(puck).projection(Vec.of(CENTER, Point.of(myPlayer.getNetFront(), CENTER.y)));
+                    // TODO: unhardcode
+                    if (distanceToPuck < 400 || (puckSpeedAgainstOurGoal > 3 && (abs(myPlayer.getNetFront() - puck.getX()) < 700))) {
+                        return new Result(tryHitNearbyEnemiesOrPuck(), goToUnit(puck));
+                    }
                 }
             }
 
             // TODO: unhardcode
-            if (defensePoint.sqrDist(self) > 1000) {
+            if (defensePoint.distance(self) > 32) {
                 return new Result(tryBlockPuck(), land(defensePoint));
             }
 
-            if (defensePoint.sqrDist(self) > 100) {
+            if (defensePoint.distance(self) > 10) {
                 return new Result(tryBlockPuck(), Go.go(stop(), self.getAngleTo(puck)));
             }
             Point strikeTarget = whereEnemyWillStrike();
@@ -301,8 +312,10 @@ public class MakeTurn {
             if (hockeyist.isTeammate() || hockeyist.getType() == HockeyistType.GOALIE) continue;
             if (isReachable(hockeyist)) return Do.STRIKE;
         }
-        // TODO: try TAKE_PUCK when the probability is high
-        if (isPuckReachable()) return Do.STRIKE;
+        if (isPuckReachable()) {
+            // TODO: something more clever, also take attributes into account
+            return speed(puck) < 17 && puck.getOwnerHockeyistId() == -1 ? Do.TAKE_PUCK : Do.STRIKE;
+        }
         return Do.NONE;
     }
 
