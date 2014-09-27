@@ -5,16 +5,6 @@ import java.util.Arrays;
 import static java.lang.StrictMath.*;
 
 public class MakeTurn {
-    public static final Point CENTER =
-            Point.of((Const.rinkLeft + Const.rinkRight) / 2, (Const.rinkTop + Const.rinkBottom) / 2);
-
-    public static final Point[] CORNERS = {
-            Point.of(Const.rinkLeft, Const.rinkTop),
-            Point.of(Const.rinkLeft, Const.rinkBottom),
-            Point.of(Const.rinkRight, Const.rinkTop),
-            Point.of(Const.rinkRight, Const.rinkBottom)
-    };
-
     private final Team team;
     private final Hockeyist self;
     private final World world;
@@ -59,7 +49,7 @@ public class MakeTurn {
             if (self.getRemainingCooldownTicks() == 0) {
                 if (puckOwnerId == -1 || !Util.findById(world, puckOwnerId).isTeammate()) {
                     double distanceToPuck = defensePoint.distance(puck);
-                    double puckSpeedAgainstOurGoal = Vec.speedOf(puck).projection(Vec.of(CENTER, Point.of(myPlayer.getNetFront(), CENTER.y)));
+                    double puckSpeedAgainstOurGoal = Vec.speedOf(puck).projection(Vec.of(Static.CENTER, Point.of(myPlayer.getNetFront(), Static.CENTER.y)));
                     // TODO: unhardcode
                     if (distanceToPuck < 400 || (puckSpeedAgainstOurGoal > 3 && (abs(myPlayer.getNetFront() - puck.getX()) < 700))) {
                         return new Result(tryHitNearbyEnemiesOrPuck(), goToUnit(puck));
@@ -75,7 +65,7 @@ public class MakeTurn {
             if (defensePoint.distance(self) > 10) {
                 return new Result(tryBlockPuck(), Go.go(stop(), self.getAngleTo(puck)));
             }
-            Point strikeTarget = whereEnemyWillStrike();
+            Point strikeTarget = determineGoalPoint(team.myStartingPlayer);
             Line strikeLine = Line.between(Point.of(puck), strikeTarget);
             Point catchAt = strikeLine.at(me.x);
             double angleToPuck = self.getAngleTo(puck);
@@ -89,13 +79,13 @@ public class MakeTurn {
                 if (self.getSwingTicks() < 15 && safeToSwingMore()) {
                     return Result.SWING;
                 } else {
-                    Point goalPoint = determineGoalPoint();
+                    Point goalPoint = determineGoalPoint(world.getOpponentPlayer());
                     return new Result(Do.STRIKE, Go.go(stop(), self.getAngleTo(goalPoint.x, goalPoint.y)));
                 }
             }
 
             if (puckOwnerId == -1) {
-                if (isPuckReachable()) {
+                if (isReachable(puck)) {
                     return new Result(Do.TAKE_PUCK, Go.go(0, 0));
                 } else {
                     return new Result(tryHitNearbyEnemiesOrPuck(), goToUnit(puck));
@@ -122,7 +112,7 @@ public class MakeTurn {
 
                 if (enemyHasNoGoalkeeper()) {
                     Player opponent = world.getOpponentPlayer();
-                    Point target = Point.of(opponent.getNetFront(), (opponent.getNetTop() + opponent.getNetBottom()) / 2);
+                    Point target = Point.of(opponent.getNetFront(), Static.CENTER.y);
                     double angle = self.getAngleTo(target.x, target.y);
                     if (Math.abs(angle) < PI / 50 && abs(me.x - opponent.getNetFront()) > 100) {
                         return Result.SWING;
@@ -161,7 +151,7 @@ public class MakeTurn {
                     return new Result(Do.NONE, Go.go(abs(angle) < PI / 2 ? 1 : stop(), angle));
 */
                 } else {
-                    Point target = determineGoalPoint();
+                    Point target = determineGoalPoint(world.getOpponentPlayer());
                     double angle = self.getAngleTo(target.x, target.y);
                     if (abs(angle) < PI / 180) {
                         return Result.SWING;
@@ -240,22 +230,11 @@ public class MakeTurn {
     @NotNull
     private Point determineAttackPoint() {
         // TODO: unhardcode
-        double x = (Const.rinkLeft + Const.rinkRight) / 2 + team.attack * 272.0;
+        double x = Static.CENTER.x + team.attack * 272.0;
 
-        double y = me.y < (Const.rinkTop + Const.rinkBottom) / 2
+        double y = me.y < Static.CENTER.y
                    ? Const.goalNetTop - Const.goalNetHeight / 6
                    : Const.goalNetTop + Const.goalNetHeight + Const.goalNetHeight / 6;
-
-        return Point.of(x, y);
-    }
-
-    @NotNull
-    private Point determineGoalPoint() {
-        double x = (world.getOpponentPlayer().getNetFront() + world.getOpponentPlayer().getNetBack()) / 2;
-
-        double y = me.y < (Const.rinkTop + Const.rinkBottom) / 2
-                   ? Const.goalNetTop + Const.goalNetHeight
-                   : Const.goalNetTop;
 
         return Point.of(x, y);
     }
@@ -313,7 +292,7 @@ public class MakeTurn {
 
         // penalty += pow(max(15 - mySpeed.project(myPosition.direction()).length(), 0), 1.1);
 
-        for (Point corner : CORNERS) {
+        for (Point corner : Static.CORNERS) {
             // TODO: investigate if it works as expected
             penalty += Util.sqr(max(150 - me.distance(corner), 0));
         }
@@ -328,7 +307,7 @@ public class MakeTurn {
             if (hockeyist.isTeammate() || hockeyist.getType() == HockeyistType.GOALIE) continue;
             if (isReachable(hockeyist)) return Do.STRIKE;
         }
-        if (isPuckReachable()) {
+        if (isReachable(puck)) {
             // TODO: something more clever, also take attributes into account
             return Util.speed(puck) < 17 && puck.getOwnerHockeyistId() == -1 ? Do.TAKE_PUCK : Do.STRIKE;
         }
@@ -338,15 +317,11 @@ public class MakeTurn {
     @NotNull
     private Do tryBlockPuck() {
         if (self.getRemainingCooldownTicks() > 0) return Do.NONE;
-        if (isPuckReachable()) {
+        if (isReachable(puck)) {
             // TODO: something more clever, also take attributes into account
             return Util.speed(puck) < 17 ? Do.TAKE_PUCK : Do.STRIKE;
         }
         return Do.NONE;
-    }
-
-    private boolean isPuckReachable() {
-        return isReachable(puck);
     }
 
     private boolean isReachable(@NotNull Unit unit) {
@@ -360,11 +335,9 @@ public class MakeTurn {
     }
 
     @NotNull
-    private Point whereEnemyWillStrike() {
-        double x = team.myStartingPlayer.getNetFront() - team.attack * Const.goalNetWidth / 2;
-        double y = puck.getY() < (Const.rinkTop + Const.rinkBottom) / 2
-                   ? Const.goalNetTop
-                   : Const.goalNetTop + Const.goalNetHeight;
+    private Point determineGoalPoint(@NotNull Player defendingPlayer) {
+        double x = (defendingPlayer.getNetFront() + defendingPlayer.getNetBack()) / 2;
+        double y = puck.getY() < Static.CENTER.y ? Const.goalNetTop + Const.goalNetHeight : Const.goalNetTop;
         return Point.of(x, y);
     }
 

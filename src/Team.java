@@ -19,7 +19,7 @@ public class Team {
 
     public Team(@NotNull World startingWorld) {
         myStartingPlayer = startingWorld.getMyPlayer();
-        attack = myStartingPlayer.getNetFront() < (Const.rinkLeft + Const.rinkRight) / 2 ? 1 : -1;
+        attack = myStartingPlayer.getNetFront() < Static.CENTER.x ? 1 : -1;
     }
 
     public void solveTick(@NotNull World world) {
