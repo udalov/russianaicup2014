@@ -87,7 +87,7 @@ public class Team {
             // s = v0*t + t^2/2
             // t = sqrt(v0^2 + 2*s) - v0
             double s = hockeyist.getDistanceTo(world.getPuck());
-            double v0 = MakeTurn.speed(hockeyist);
+            double v0 = Util.speed(hockeyist);
             double t = Math.sqrt(v0*v0 + 2*s) - v0;
             if (bestPlayer == null || t < bestTime) {
                 bestTime = t;

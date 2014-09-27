@@ -57,7 +57,7 @@ public class MakeTurn {
             }
 
             if (self.getRemainingCooldownTicks() == 0) {
-                if (puckOwnerId == -1 || !findHockeyistById(puckOwnerId).isTeammate()) {
+                if (puckOwnerId == -1 || !Util.findById(world, puckOwnerId).isTeammate()) {
                     double distanceToPuck = defensePoint.distance(puck);
                     double puckSpeedAgainstOurGoal = Vec.speedOf(puck).projection(Vec.of(CENTER, Point.of(myPlayer.getNetFront(), CENTER.y)));
                     // TODO: unhardcode
@@ -212,7 +212,7 @@ public class MakeTurn {
     }
 
     private boolean safeToSwingMore() {
-        if (speed(self) > 4) return false;
+        if (Util.speed(self) > 4) return false;
         for (Hockeyist enemy : world.getHockeyists()) {
             if (enemy.isTeammate() || enemy.getType() == HockeyistType.GOALIE) continue;
             if (isReachable(enemy, puck) || isReachable(enemy, self)) return false;
@@ -230,7 +230,7 @@ public class MakeTurn {
     @NotNull
     private Go goToUnit(@NotNull Unit unit) {
         // TODO: unhardcode
-        double speed = max(speed(self), 10);
+        double speed = max(Util.speed(self), 10);
         double distance = self.getDistanceTo(unit);
         Point futurePosition = Point.of(unit).shift(distance / speed * unit.getSpeedX(), distance / speed * unit.getSpeedY());
         double angle = self.getAngleTo(futurePosition.x, futurePosition.y);
@@ -258,14 +258,6 @@ public class MakeTurn {
                    : Const.goalNetTop;
 
         return Point.of(x, y);
-    }
-
-    @NotNull
-    private Hockeyist findHockeyistById(long id) {
-        for (Hockeyist hockeyist : world.getHockeyists()) {
-            if (hockeyist.getId() == id) return hockeyist;
-        }
-        throw new AssertionError("Invisible hockeyist: " + id + ", world: " + Arrays.toString(world.getHockeyists()));
     }
 
     private static double evaluate(@NotNull State currentState, @NotNull Go go, @NotNull Point attackPoint) {
@@ -338,7 +330,7 @@ public class MakeTurn {
         }
         if (isPuckReachable()) {
             // TODO: something more clever, also take attributes into account
-            return speed(puck) < 17 && puck.getOwnerHockeyistId() == -1 ? Do.TAKE_PUCK : Do.STRIKE;
+            return Util.speed(puck) < 17 && puck.getOwnerHockeyistId() == -1 ? Do.TAKE_PUCK : Do.STRIKE;
         }
         return Do.NONE;
     }
@@ -348,7 +340,7 @@ public class MakeTurn {
         if (self.getRemainingCooldownTicks() > 0) return Do.NONE;
         if (isPuckReachable()) {
             // TODO: something more clever, also take attributes into account
-            return speed(puck) < 17 ? Do.TAKE_PUCK : Do.STRIKE;
+            return Util.speed(puck) < 17 ? Do.TAKE_PUCK : Do.STRIKE;
         }
         return Do.NONE;
     }
@@ -377,7 +369,7 @@ public class MakeTurn {
     }
 
     private double stop() {
-        if (speed(self) < 1.0) return 0.0;
+        if (Util.speed(self) < 1.0) return 0.0;
         return Util.angleDiff(atan2(self.getSpeedY(), self.getSpeedX()), self.getAngle()) > PI / 2 ? 1.0 : -1.0;
     }
 
@@ -385,7 +377,7 @@ public class MakeTurn {
     private Go land(@NotNull Point target) {
         double alpha = self.getAngleTo(target.x, target.y);
         double distance = self.getDistanceTo(target.x, target.y);
-        double speed = speed(self);
+        double speed = Util.speed(self);
 
         boolean closeBy = distance < speed * speed / 2;
 
@@ -408,9 +400,5 @@ public class MakeTurn {
             }
             return Go.go(speed < 1.0 ? 0.0 : 1, turn);
         }
-    }
-
-    public static double speed(@NotNull Unit unit) {
-        return Math.hypot(unit.getSpeedX(), unit.getSpeedY());
     }
 }

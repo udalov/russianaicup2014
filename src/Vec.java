@@ -51,7 +51,7 @@ public class Vec {
     }
 
     public double length() {
-        return sqrt(x * x + y * y);
+        return hypot(x, y);
     }
 
     @NotNull
