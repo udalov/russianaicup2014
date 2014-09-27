@@ -7,12 +7,12 @@ import java.awt.*;
 @SuppressWarnings({"MethodMayBeStatic", "MagicNumber", "UnusedParameters"})
 public final class LocalTestRendererListener {
     public void beforeDrawScene(@NotNull Graphics graphics, @NotNull World world, @NotNull Game game, double scale) {
-        graphics.drawString(String.format("puck speed %.3f", Vec.speedOf(world.getPuck()).length()), 200, 24);
+        graphics.drawString(String.format("puck speed %.3f", Util.speed(world.getPuck())), 200, 24);
 
         long puckOwnerId = world.getPuck().getOwnerHockeyistId();
         if (puckOwnerId != -1) {
             Hockeyist puckOwner = Util.findById(world, puckOwnerId);
-            graphics.drawString(String.format("puck owner speed %.3f", Vec.speedOf(puckOwner).length()), 200, 48);
+            graphics.drawString(String.format("puck owner speed %.3f", Util.speed(puckOwner)), 200, 48);
         }
 /*
         graphics.drawRect(100, 100, 500, 500);

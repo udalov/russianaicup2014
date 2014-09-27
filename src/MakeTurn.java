@@ -49,7 +49,7 @@ public class MakeTurn {
             if (self.getRemainingCooldownTicks() == 0) {
                 if (puckOwnerId == -1 || !Util.findById(world, puckOwnerId).isTeammate()) {
                     double distanceToPuck = defensePoint.distance(puck);
-                    double puckSpeedAgainstOurGoal = Vec.speedOf(puck).projection(Vec.of(Static.CENTER, Point.of(myPlayer.getNetFront(), Static.CENTER.y)));
+                    double puckSpeedAgainstOurGoal = Vec.velocity(puck).projection(Vec.of(Static.CENTER, Point.of(myPlayer.getNetFront(), Static.CENTER.y)));
                     // TODO: unhardcode
                     if (distanceToPuck < 400 || (puckSpeedAgainstOurGoal > 3 && (abs(myPlayer.getNetFront() - puck.getX()) < 700))) {
                         return new Result(tryHitNearbyEnemiesOrPuck(), goToUnit(puck));
@@ -129,7 +129,7 @@ public class MakeTurn {
 
                 Point attackPoint = determineAttackPoint();
                 // TODO: unhardcode
-                if (attackPoint.sqrDist(self) > 10000) {
+                if (attackPoint.distance(self) > 100) {
                     State state = State.of(self, world);
                     double bestGoResult = Double.MIN_VALUE;
                     Go bestGo = null;
@@ -189,11 +189,12 @@ public class MakeTurn {
     @Nullable
     private Do tryPass() {
         if (self.getRemainingCooldownTicks() > 0) return null;
+        Vec myDirection = Vec.direction(self);
         for (Hockeyist ally : world.getHockeyists()) {
             if (!ally.isTeammate() || ally.getType() == HockeyistType.GOALIE || ally.getId() == self.getId()) continue;
             double angle = self.getAngleTo(ally);
             if (-game.getPassSector() / 2 < angle && angle < game.getPassSector() / 2) {
-                if (Util.angleDiff(self.getAngle(), ally.getAngle()) > 2 * PI / 3) {
+                if (abs(myDirection.angleTo(Vec.direction(ally))) > 2 * PI / 3) {
                     return Do.pass(min(400.0 / self.getDistanceTo(ally), 1.0), angle);
                 }
             }
@@ -222,7 +223,8 @@ public class MakeTurn {
         // TODO: unhardcode
         double speed = max(Util.speed(self), 10);
         double distance = self.getDistanceTo(unit);
-        Point futurePosition = Point.of(unit).shift(distance / speed * unit.getSpeedX(), distance / speed * unit.getSpeedY());
+        Vec movement = Vec.velocity(unit).multiply(distance / speed);
+        Point futurePosition = Point.of(unit).shift(movement);
         double angle = self.getAngleTo(futurePosition.x, futurePosition.y);
         return Go.go(abs(angle) < PI / 2 ? 1 : stop(), angle);
     }
@@ -256,9 +258,8 @@ public class MakeTurn {
         double penalty = 0;
 
         Position myPosition = state.pos[state.myIndex];
-        Vec mySpeed = myPosition.speed();
+        Vec myVelocity = myPosition.velocity();
         Point me = myPosition.point();
-        double myAngle = myPosition.angle;
         Vec myDirection = myPosition.direction();
 
         penalty += me.distance(attackPoint);
@@ -271,11 +272,11 @@ public class MakeTurn {
             if (hockeyist.getId() == state.self().getId() || hockeyist.getType() == HockeyistType.GOALIE) continue;
             Position enemy = state.pos[i];
 
-            double angleToEnemy = Util.angleDiff(myAngle, atan2(enemy.y - me.y, enemy.x - me.x));
-            if (abs(angleToEnemy) > dangerousAngle) continue;
+            double angleToEnemy = abs(myPosition.direction().angleTo(Vec.of(me, enemy.point())));
+            if (angleToEnemy > dangerousAngle) continue;
 
             double distance = me.distance(enemy.point());
-            double convergenceSpeed = abs(mySpeed.x) < 1e-6 ? 0 : 1 - enemy.speed().projection(mySpeed);
+            double convergenceSpeed = abs(myVelocity.x) < 1e-6 ? 0 : 1 - enemy.velocity().projection(myVelocity);
             if (distance > 150 && convergenceSpeed < 20) continue;
 
             if (!hockeyist.isTeammate() && distance < 150) penalty += sqrt(150 - distance);
@@ -283,14 +284,13 @@ public class MakeTurn {
             penalty += (hockeyist.isTeammate() ? 30 : 150) * (1 - abs(angleToEnemy) / dangerousAngle);
         }
 
-        double futureX = me.x + 10 * myDirection.x;
-        double futureY = me.y + 10 * myDirection.y;
-        penalty += Util.sqr(max(Const.rinkLeft - futureX, 0)) * 10;
-        penalty += Util.sqr(max(futureX - Const.rinkRight, 0)) * 10;
-        penalty += Util.sqr(max(Const.rinkTop - futureY, 0)) * 10;
-        penalty += Util.sqr(max(futureY - Const.rinkBottom, 0)) * 10;
+        Point future = me.shift(myDirection.multiply(10));
+        penalty += Util.sqr(max(Const.rinkLeft - future.x, 0)) * 10;
+        penalty += Util.sqr(max(future.x - Const.rinkRight, 0)) * 10;
+        penalty += Util.sqr(max(Const.rinkTop - future.y, 0)) * 10;
+        penalty += Util.sqr(max(future.y - Const.rinkBottom, 0)) * 10;
 
-        // penalty += pow(max(15 - mySpeed.project(myPosition.direction()).length(), 0), 1.1);
+        // penalty += pow(max(15 - myVelocity.project(myDirection).length(), 0), 1.1);
 
         for (Point corner : Static.CORNERS) {
             // TODO: investigate if it works as expected
@@ -343,7 +343,7 @@ public class MakeTurn {
 
     private double stop() {
         if (Util.speed(self) < 1.0) return 0.0;
-        return Util.angleDiff(atan2(self.getSpeedY(), self.getSpeedX()), self.getAngle()) > PI / 2 ? 1.0 : -1.0;
+        return abs(Vec.velocity(self).angleTo(Vec.direction(self))) > PI / 2 ? 1.0 : -1.0;
     }
 
     @NotNull

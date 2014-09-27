@@ -70,7 +70,7 @@ public class Team {
     private static Hockeyist findClosestToPoint(@NotNull List<Hockeyist> players, @NotNull Point point) {
         Hockeyist closest = null;
         for (Hockeyist hockeyist : players) {
-            if (closest == null || point.sqrDist(hockeyist) < point.sqrDist(closest)) {
+            if (closest == null || point.distance(hockeyist) < point.distance(closest)) {
                 closest = hockeyist;
             }
         }

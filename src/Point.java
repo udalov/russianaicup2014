@@ -22,35 +22,12 @@ public class Point {
     }
 
     @NotNull
-    public Point shiftX(double x) {
-        return new Point(this.x + x, y);
-    }
-
-    @NotNull
-    public Point shiftY(double y) {
-        return new Point(x, this.y + y);
-    }
-
-    @NotNull
-    public Point shift(double x, double y) {
-        return new Point(this.x + x, this.y + y);
-    }
-
-    @NotNull
-    public Point transpose(@NotNull Point center) {
-        return new Point(2 * center.x - x, 2 * center.y - y);
-    }
-
-    public double sqrDist(double x0, double y0) {
-        return (x - x0) * (x - x0) + (y - y0) * (y - y0);
-    }
-
-    public double sqrDist(@NotNull Unit unit) {
-        return sqrDist(unit.getX(), unit.getY());
+    public Point shift(@NotNull Vec vector) {
+        return new Point(this.x + vector.x, this.y + vector.y);
     }
 
     public double distance(double x0, double y0) {
-        return sqrt(sqrDist(x0, y0));
+        return sqrt((x - x0) * (x - x0) + (y - y0) * (y - y0));
     }
 
     public double distance(@NotNull Point other) {
@@ -59,16 +36,6 @@ public class Point {
 
     public double distance(@NotNull Unit other) {
         return distance(other.getX(), other.getY());
-    }
-
-    @Override
-    public int hashCode() {
-        return Double.valueOf(x).hashCode() * 31 + Double.valueOf(y).hashCode();
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        return obj instanceof Point && ((Point) obj).x == x && ((Point) obj).y == y;
     }
 
     @Override

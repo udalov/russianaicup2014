@@ -29,13 +29,13 @@ public class Position {
     }
 
     @NotNull
-    public Vec speed() {
+    public Vec velocity() {
         return Vec.of(speedX, speedY);
     }
 
     @NotNull
     public Vec direction() {
-        return Vec.of(cos(angle), sin(angle));
+        return Vec.of(angle);
     }
 
     // TODO: all constants depend on the hockeyist's condition
@@ -44,7 +44,7 @@ public class Position {
         double turn = max(min(go.turn, Const.hockeyistTurnAngleFactor), -Const.hockeyistTurnAngleFactor);
         double speedup = go.speedup * (go.speedup > 0 ? Const.hockeyistSpeedUpFactor : Const.hockeyistSpeedDownFactor);
         Vec direction = Vec.of(cos(angle + turn), sin(angle + turn));
-        Vec speed = Vec.of(speedX, speedY).plus(direction.multiply(speedup)).multiply(0.98);
+        Vec speed = velocity().plus(direction.multiply(speedup)).multiply(0.98);
         return new Position(x + speed.x, y + speed.y, speed.x, speed.y, Util.normalize(angle + turn));
     }
 

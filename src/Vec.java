@@ -22,8 +22,18 @@ public class Vec {
     }
 
     @NotNull
-    public static Vec speedOf(@NotNull Unit unit) {
+    public static Vec of(double angle) {
+        return new Vec(cos(angle), sin(angle));
+    }
+
+    @NotNull
+    public static Vec velocity(@NotNull Unit unit) {
         return new Vec(unit.getSpeedX(), unit.getSpeedY());
+    }
+
+    @NotNull
+    public static Vec direction(@NotNull Unit unit) {
+        return of(unit.getAngle());
     }
 
     @NotNull
@@ -44,10 +54,6 @@ public class Vec {
     @NotNull
     public Vec divide(double k) {
         return new Vec(x / k, y / k);
-    }
-
-    public double sqr() {
-        return x * x + y * y;
     }
 
     public double length() {
