@@ -2,3 +2,4 @@
 - don't bump into the wall/corner!
 - don't push enemies onto the free puck
 - make pass not to the hockeyist's position, but to the position where he can catch the puck
+- only make pass if there's enough space
