@@ -22,6 +22,11 @@ public class Vec {
     }
 
     @NotNull
+    public static Vec of(@NotNull Unit from, @NotNull Unit to) {
+        return new Vec(to.getX() - from.getX(), to.getY() - from.getY());
+    }
+
+    @NotNull
     public static Vec of(double angle) {
         return new Vec(cos(angle), sin(angle));
     }
