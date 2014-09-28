@@ -92,9 +92,10 @@ public class Vec {
     }
 
     public double angleTo(@NotNull Vec other) {
-        // TODO: what the hell is this, I don't even...
         double d = angle() - other.angle();
-        return atan2(sin(d), cos(d));
+        if (d > PI) d -= 2 * PI;
+        if (d < -PI) d += 2 * PI;
+        return d;
     }
 
     @Override

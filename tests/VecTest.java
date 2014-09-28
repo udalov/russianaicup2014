@@ -1,4 +1,4 @@
-import junit.framework.AssertionFailedError;
+import junit.framework.ComparisonFailure;
 import junit.framework.TestCase;
 
 import static java.lang.StrictMath.PI;
@@ -33,13 +33,11 @@ public class VecTest extends TestCase {
 
     public void testAngleTo() {
         assertEq(0, Vec.of(42, 48).angleTo(Vec.of(42, 48)));
-/*
-        // TODO: wtf?
-        assertEq(PI / 2, Vec.of(1, 1).angleTo(Vec.of(-1, 1)));
-        assertEq(3 * PI / 4, Vec.of(1, 1).angleTo(Vec.of(-1, 0)));
-        assertEq(-3 * PI / 4, Vec.of(-1, 0).angleTo(Vec.of(1, 1)));
+        assertEq(-PI / 2, Vec.of(1, 1).angleTo(Vec.of(-1, 1)));
+        assertEq(PI / 2, Vec.of(-1, 1).angleTo(Vec.of(1, 1)));
+        assertEq(-3 * PI / 4, Vec.of(1, 1).angleTo(Vec.of(-1, 0)));
+        assertEq(3 * PI / 4, Vec.of(-1, 0).angleTo(Vec.of(1, 1)));
         assertEq(PI, abs(Vec.of(1, 2).angleTo(Vec.of(-1, -2))));
-*/
     }
 
 
@@ -52,7 +50,9 @@ public class VecTest extends TestCase {
 
     private static void assertEq(double expected, double actual) {
         if (abs(expected - actual) > 1e-9) {
-            throw new AssertionFailedError(String.format("expected %.9f, actual %.9f", expected, actual));
+            String e = String.format("%.9f", expected);
+            String a = String.format("%.9f", actual);
+            throw new ComparisonFailure("expected " + e + ", actual " + a, e, a);
         }
     }
 }
