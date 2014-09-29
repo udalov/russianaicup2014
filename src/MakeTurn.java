@@ -47,9 +47,9 @@ public class MakeTurn {
             }
 
             if (self.getRemainingCooldownTicks() == 0) {
-                if (puckOwnerId == -1 || !Util.findById(world, puckOwnerId).isTeammate()) {
+                if (puckOwnerId == -1 || puck.getOwnerPlayerId() != myPlayer.getId()) {
                     double distanceToPuck = defensePoint.distance(puck);
-                    double puckSpeedAgainstOurGoal = Vec.velocity(puck).projection(Vec.of(Static.CENTER, Point.of(myPlayer.getNetFront(), Static.CENTER.y)));
+                    double puckSpeedAgainstOurGoal = Vec.velocity(puck).projection(Vec.of(-team.attack, 0));
                     // TODO: unhardcode
                     if (distanceToPuck < 400 || (puckSpeedAgainstOurGoal > 3 && (abs(myPlayer.getNetFront() - puck.getX()) < 700))) {
                         return new Result(tryHitNearbyEnemiesOrPuck(), goToUnit(puck));
@@ -276,7 +276,7 @@ public class MakeTurn {
             if (angleToEnemy > dangerousAngle) continue;
 
             double distance = me.distance(enemy.point());
-            double convergenceSpeed = abs(myVelocity.x) < 1e-6 ? 0 : 1 - enemy.velocity().projection(myVelocity);
+            double convergenceSpeed = myVelocity.length() < 1e-6 ? 0 : 1 - enemy.velocity().projection(myVelocity);
             if (distance > 150 && convergenceSpeed < 20) continue;
 
             if (!hockeyist.isTeammate() && distance < 150) penalty += sqrt(150 - distance);

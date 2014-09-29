@@ -1,6 +1,7 @@
 import model.Unit;
 
-import static java.lang.StrictMath.*;
+import static java.lang.StrictMath.max;
+import static java.lang.StrictMath.min;
 
 public class Position {
     public final double x;
@@ -43,9 +44,9 @@ public class Position {
     public Position move(@NotNull Go go) {
         double turn = max(min(go.turn, Const.hockeyistTurnAngleFactor), -Const.hockeyistTurnAngleFactor);
         double speedup = go.speedup * (go.speedup > 0 ? Const.hockeyistSpeedUpFactor : Const.hockeyistSpeedDownFactor);
-        Vec direction = Vec.of(cos(angle + turn), sin(angle + turn));
+        Vec direction = Vec.of(angle + turn);
         Vec speed = velocity().plus(direction.multiply(speedup)).multiply(0.98);
-        return new Position(x + speed.x, y + speed.y, speed.x, speed.y, Util.normalize(angle + turn));
+        return new Position(x + speed.x, y + speed.y, speed.x, speed.y, direction.angle());
     }
 
     @Override

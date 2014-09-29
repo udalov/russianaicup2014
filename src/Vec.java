@@ -92,10 +92,7 @@ public class Vec {
     }
 
     public double angleTo(@NotNull Vec other) {
-        double d = angle() - other.angle();
-        if (d > PI) d -= 2 * PI;
-        if (d < -PI) d += 2 * PI;
-        return d;
+        return Util.normalize(angle() - other.angle());
     }
 
     @Override
