@@ -34,6 +34,11 @@ public class State {
     }
 
     @NotNull
+    public Position me() {
+        return pos[myIndex];
+    }
+
+    @NotNull
     public Hockeyist self() {
         return (Hockeyist) unit[myIndex];
     }
@@ -46,5 +51,10 @@ public class State {
             positions[i] = positions[i].move(i == myIndex ? go : DEFAULT_DIRECTION);
         }
         return new State(positions, units, myIndex);
+    }
+
+    @Override
+    public String toString() {
+        return "me at " + me();
     }
 }

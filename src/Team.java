@@ -7,8 +7,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Team {
-    public final Player myStartingPlayer;
-
     // 1 if we are on the left, -1 if we are on the right
     public final int attack;
 
@@ -17,9 +15,8 @@ public class Team {
 
     public int lastGoalTick;
 
-    public Team(@NotNull World startingWorld) {
-        myStartingPlayer = startingWorld.getMyPlayer();
-        attack = myStartingPlayer.getNetFront() < Static.CENTER.x ? 1 : -1;
+    public Team() {
+        attack = Players.me.getNetFront() < Static.CENTER.x ? 1 : -1;
     }
 
     public void solveTick(@NotNull World world) {
@@ -35,7 +32,7 @@ public class Team {
         Point defensePoint = determineDefensePoint(world);
 
         long puckOwnerPlayerId = world.getPuck().getOwnerPlayerId();
-        if (puckOwnerPlayerId == world.getMyPlayer().getId()) {
+        if (puckOwnerPlayerId == Players.me.getId()) {
             long puckOwnerId = world.getPuck().getOwnerHockeyistId();
             for (Hockeyist hockeyist : myFieldPlayers) {
                 long id = hockeyist.getId();
@@ -111,8 +108,7 @@ public class Team {
     private Point determineDefensePoint(@NotNull World world) {
         // TODO: radius can be different for different hockeyists
         double radius = world.getHockeyists()[0].getRadius();
-
-        return Point.of(myStartingPlayer.getNetFront() + attack * (radius * 3.2), (myStartingPlayer.getNetTop() + myStartingPlayer.getNetBottom()) / 2);
+        return Point.of(Players.me.getNetFront() + attack * (radius * 3.2), (Players.me.getNetTop() + Players.me.getNetBottom()) / 2);
     }
 
     @NotNull

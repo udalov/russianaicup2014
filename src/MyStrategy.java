@@ -14,7 +14,8 @@ public class MyStrategy implements Strategy {
     public void move(@NotNull Hockeyist self, @NotNull World world, @NotNull Game game, @NotNull Move move) {
         if (TEAM == null) {
             Const.initialize(game);
-            TEAM = new Team(world);
+            Players.initialize(world);
+            TEAM = new Team();
         }
 
         TEAM.solveTick(world);
