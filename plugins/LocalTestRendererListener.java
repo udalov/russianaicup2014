@@ -1,33 +1,21 @@
 import model.Game;
-import model.Hockeyist;
 import model.World;
 
 import java.awt.*;
 
-@SuppressWarnings({"MethodMayBeStatic", "MagicNumber", "UnusedParameters"})
+@SuppressWarnings({"MethodMayBeStatic", "UnusedParameters"})
 public final class LocalTestRendererListener {
-    public void beforeDrawScene(@NotNull Graphics graphics, @NotNull World world, @NotNull Game game, double scale) {
-        graphics.drawString(String.format("puck speed %.3f", Util.speed(world.getPuck())), 200, 24);
-
-        long puckOwnerId = world.getPuck().getOwnerHockeyistId();
-        if (puckOwnerId != -1) {
-            Hockeyist puckOwner = Util.findById(world, puckOwnerId);
-            graphics.drawString(String.format("puck owner speed %.3f", Util.speed(puckOwner)), 200, 48);
-        }
-/*
-        graphics.drawRect(100, 100, 500, 500);
-        for (Hockeyist hockeyist : world.getHockeyists()) {
-            graphics.drawArc((int) hockeyist.getX() - 50, (int) hockeyist.getY() - 50, 100, 100, 0, 360);
-        }
-*/
+    public void beforeDrawScene(@NotNull Graphics graphics, @NotNull World world, @NotNull Game game, double scale) throws Exception {
+        Graphics2D g = (Graphics2D) graphics;
+        g.scale(scale, scale);
+        new MyRenderer(g, world).renderBefore();
+        g.scale(1 / scale, 1 / scale);
     }
 
     public void afterDrawScene(@NotNull Graphics graphics, @NotNull World world, @NotNull Game game, double scale) {
-/*
-        graphics.drawRect(200, 200, 550, 550);
-        for (Hockeyist hockeyist : world.getHockeyists()) {
-            graphics.drawArc((int) hockeyist.getX() - 40, (int) hockeyist.getY() - 40, 80, 80, 0, 360);
-        }
-*/
+        Graphics2D g = (Graphics2D) graphics;
+        g.scale(scale, scale);
+        new MyRenderer(g, world).renderAfter();
+        g.scale(1 / scale, 1 / scale);
     }
 }
