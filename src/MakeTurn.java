@@ -14,6 +14,8 @@ public class MakeTurn {
 
     private final Point me;
     private final Puck puck;
+    private final Player myPlayer;
+    private final Player opponentPlayer;
 
     public MakeTurn(@NotNull Team team, @NotNull Hockeyist self, @NotNull World world, @NotNull Game game) {
         this.team = team;
@@ -23,13 +25,14 @@ public class MakeTurn {
 
         this.me = Point.of(self);
         this.puck = world.getPuck();
+        this.myPlayer = world.getMyPlayer();
+        this.opponentPlayer = world.getOpponentPlayer();
     }
 
     @NotNull
     public Result makeTurn() {
         if (self.getRemainingKnockdownTicks() > 0) return new Result(Do.NONE, Go.go(0, 0));
 
-        Player myPlayer = world.getMyPlayer();
         if (myPlayer.isJustScoredGoal()) return winningDance();
         if (myPlayer.isJustMissedGoal()) return losingDance();
 
@@ -79,7 +82,7 @@ public class MakeTurn {
                 if (self.getSwingTicks() < 15 && safeToSwingMore()) {
                     return Result.SWING;
                 } else {
-                    Point goalPoint = determineGoalPoint(world.getOpponentPlayer());
+                    Point goalPoint = determineGoalPoint(opponentPlayer);
                     return new Result(Do.STRIKE, Go.go(stop(), self.getAngleTo(goalPoint.x, goalPoint.y)));
                 }
             }
@@ -93,28 +96,10 @@ public class MakeTurn {
             } else if (puckOwnerId != self.getId()) {
                 return new Result(tryHitNearbyEnemiesOrPuck(), goToUnit(puck));
             } else {
-/*
-                for (Hockeyist hockeyist : world.getHockeyists()) {
-                    if (!hockeyist.isTeammate() &&
-                        hockeyist.getRemainingCooldownTicks() < 5 &&
-                        hockeyist.getRemainingKnockdownTicks() < 5 &&
-                        self.getDistanceTo(hockeyist) < self.getRadius() + hockeyist.getRadius() + 10) {
-                        return new Result(Do.STRIKE, Go.go(1, 0));
-                    }
-                }
-*/
-
-/*
-                if (world.getTick() - team.lastGoalTick < 50) {
-                    return new Result(Do.NONE, Go.go(1, game.getRandomSeed() % 2 == 0 ? -1 : 1));
-                }
-*/
-
                 if (enemyHasNoGoalkeeper()) {
-                    Player opponent = world.getOpponentPlayer();
-                    Point target = Point.of(opponent.getNetFront(), Static.CENTER.y);
+                    Point target = Point.of(opponentPlayer.getNetFront(), Static.CENTER.y);
                     double angle = self.getAngleTo(target.x, target.y);
-                    if (Math.abs(angle) < PI / 50 && abs(me.x - opponent.getNetFront()) > 100) {
+                    if (Math.abs(angle) < PI / 50 && abs(me.x - opponentPlayer.getNetFront()) > 100) {
                         return Result.SWING;
                     } else {
                         return new Result(Do.NONE, Go.go(stop(), angle));
@@ -151,7 +136,7 @@ public class MakeTurn {
                     return new Result(Do.NONE, Go.go(abs(angle) < PI / 2 ? 1 : stop(), angle));
 */
                 } else {
-                    Point target = determineGoalPoint(world.getOpponentPlayer());
+                    Point target = determineGoalPoint(opponentPlayer);
                     double angle = self.getAngleTo(target.x, target.y);
                     if (abs(angle) < PI / 180) {
                         return Result.SWING;
@@ -235,8 +220,8 @@ public class MakeTurn {
         double x = Static.CENTER.x + team.attack * 272.0;
 
         double y = me.y < Static.CENTER.y
-                   ? Const.goalNetTop - Const.goalNetHeight / 6
-                   : Const.goalNetTop + Const.goalNetHeight + Const.goalNetHeight / 6;
+                   ? opponentPlayer.getNetTop() - Const.goalNetHeight / 6
+                   : opponentPlayer.getNetBottom() + Const.goalNetHeight / 6;
 
         return Point.of(x, y);
     }
@@ -336,8 +321,10 @@ public class MakeTurn {
 
     @NotNull
     private Point determineGoalPoint(@NotNull Player defendingPlayer) {
-        double x = (defendingPlayer.getNetFront() + defendingPlayer.getNetBack()) / 2;
-        double y = puck.getY() < Static.CENTER.y ? Const.goalNetTop + Const.goalNetHeight : Const.goalNetTop;
+        double x = defendingPlayer.getNetFront();
+        double y = puck.getY() < Static.CENTER.y
+                   ? defendingPlayer.getNetBottom() + puck.getRadius()
+                   : defendingPlayer.getNetTop() - puck.getRadius();
         return Point.of(x, y);
     }
 
