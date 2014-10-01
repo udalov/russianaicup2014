@@ -63,9 +63,9 @@ public class State {
         Position[] positions = Arrays.copyOf(pos, pos.length);
         Hockeyist[] hockeyists = Arrays.copyOf(this.hockeyists, this.hockeyists.length);
         for (int i = 0, n = hockeyists.length; i < n; i++) {
-            positions[i] = positions[i].move(i == myIndex ? go : DEFAULT_DIRECTION, 0.02);
+            positions[i] = positions[i].moveHockeyist(i == myIndex ? go : DEFAULT_DIRECTION, hockeyists[i]);
         }
-        Position newPuck = puck.move(DEFAULT_DIRECTION, 0.001);
+        Position newPuck = puck.movePuck();
         return new State(positions, hockeyists, newPuck, myIndex);
     }
 

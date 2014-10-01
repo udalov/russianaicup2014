@@ -1,3 +1,4 @@
+import model.Hockeyist;
 import model.Unit;
 
 import static java.lang.StrictMath.max;
@@ -39,14 +40,23 @@ public class Position {
         return Vec.of(angle);
     }
 
-    // TODO: all constants depend on the hockeyist's condition
     @NotNull
-    public Position move(@NotNull Go go, double friction) {
-        double turn = max(min(go.turn, Const.hockeyistTurnAngleFactor), -Const.hockeyistTurnAngleFactor);
-        double speedup = go.speedup * (go.speedup > 0 ? Const.hockeyistSpeedUpFactor : Const.hockeyistSpeedDownFactor);
+    public Position moveHockeyist(@NotNull Go go, @NotNull Hockeyist hockeyist) {
+        double condition = Util.effectiveAttribute(hockeyist, hockeyist.getAgility());
+        double turnLimit = Const.hockeyistTurnAngleFactor * condition;
+        double turn = max(min(go.turn, turnLimit), -turnLimit);
+        double relativeSpeedup = max(min(go.speedup, 1), -1);
+        double speedup = relativeSpeedup * (relativeSpeedup > 0 ? Const.hockeyistSpeedUpFactor : Const.hockeyistSpeedDownFactor) * condition;
         Vec direction = Vec.of(angle + turn);
-        Vec speed = velocity().plus(direction.multiply(speedup)).multiply(1 - friction);
-        return new Position(x + speed.x, y + speed.y, speed.x, speed.y, direction.angle());
+        Vec velocity = velocity().plus(direction.multiply(speedup)).multiply(0.98);
+        return new Position(x + velocity.x, y + velocity.y, velocity.x, velocity.y, direction.angle());
+    }
+
+    // TODO: use inheritance or something
+    @NotNull
+    public Position movePuck() {
+        Vec velocity = velocity().multiply(0.999);
+        return new Position(x + velocity.x, y + velocity.y, velocity.x, velocity.y, angle);
     }
 
     @Override

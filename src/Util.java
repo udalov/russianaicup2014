@@ -27,4 +27,8 @@ public class Util {
     public static double speed(@NotNull Unit unit) {
         return hypot(unit.getSpeedX(), unit.getSpeedY());
     }
+
+    public static double effectiveAttribute(@NotNull Hockeyist hockeyist, double attribute) {
+        return (0.75 + 0.25 * hockeyist.getStamina() / 2000) * attribute / 100;
+    }
 }

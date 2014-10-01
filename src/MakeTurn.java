@@ -6,17 +6,6 @@ import java.util.Collection;
 import static java.lang.StrictMath.*;
 
 public class MakeTurn {
-    private static final Collection<Go> POSSIBLE_MOVES;
-
-    static {
-        POSSIBLE_MOVES = new ArrayList<>();
-        for (int speedup = -1; speedup <= 1; speedup++) {
-            for (double turn = -Const.hockeyistTurnAngleFactor; turn <= Const.hockeyistTurnAngleFactor + 1e-6; turn += Const.hockeyistTurnAngleFactor / 8) {
-                POSSIBLE_MOVES.add(Go.go(speedup, turn));
-            }
-        }
-    }
-
     private final Team team;
     private final Hockeyist self;
     private final World world;
@@ -136,7 +125,7 @@ public class MakeTurn {
                 } else {
                     double bestGoResult = Double.MIN_VALUE;
                     Go bestGo = null;
-                    for (Go go : POSSIBLE_MOVES) {
+                    for (Go go : iteratePossibleMoves()) {
                         double cur = evaluate(state, go, attackPoint);
                         if (bestGo == null || cur > bestGoResult) {
                             bestGoResult = cur;
@@ -209,6 +198,19 @@ public class MakeTurn {
             if (!hockeyist.isTeammate() && hockeyist.getType() == HockeyistType.GOALIE) return false;
         }
         return true;
+    }
+
+    @NotNull
+    private Collection<Go> iteratePossibleMoves() {
+        double d = Const.hockeyistTurnAngleFactor * Util.effectiveAttribute(self, self.getAgility());
+        Collection<Go> result = new ArrayList<>(51);
+        for (int speedup = -1; speedup <= 1; speedup++) {
+            for (double turn = -d; turn <= d + 1e-6; turn += d / 8) {
+                result.add(Go.go(speedup, turn));
+            }
+        }
+
+        return result;
     }
 
     @NotNull
