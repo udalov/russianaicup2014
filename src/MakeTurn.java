@@ -91,7 +91,12 @@ public class MakeTurn {
                     return Result.SWING;
                 } else {
                     Point goalPoint = determineGoalPoint(Players.opponent);
-                    return new Result(Do.STRIKE, Go.go(stop(), self.getAngleTo(goalPoint.x, goalPoint.y)));
+                    double angle = self.getAngleTo(goalPoint.x, goalPoint.y);
+                    if (abs(angle) > 8 * PI / 180) {
+                        return new Result(Do.CANCEL_STRIKE, Go.go(stop(), 0));
+                    } else {
+                        return new Result(Do.STRIKE, Go.go(stop(), angle));
+                    }
                 }
             }
 
@@ -248,7 +253,7 @@ public class MakeTurn {
         Point me = myPosition.point();
         Vec myDirection = myPosition.direction();
 
-        penalty += me.distance(attackPoint)/* TODO: / 100*/;
+        penalty += me.distance(attackPoint) / 100;
 
         double dangerousAngle = PI / 2;
 
