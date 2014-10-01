@@ -1,10 +1,22 @@
 import model.*;
 
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.Collection;
 
 import static java.lang.StrictMath.*;
 
 public class MakeTurn {
+    private static final Collection<Go> POSSIBLE_MOVES;
+
+    static {
+        POSSIBLE_MOVES = new ArrayList<>();
+        for (int speedup = -1; speedup <= 1; speedup++) {
+            for (double turn = -Const.hockeyistTurnAngleFactor; turn <= Const.hockeyistTurnAngleFactor + 1e-6; turn += Const.hockeyistTurnAngleFactor / 8) {
+                POSSIBLE_MOVES.add(Go.go(speedup, turn));
+            }
+        }
+    }
+
     private final Team team;
     private final Hockeyist self;
     private final World world;
@@ -75,7 +87,7 @@ public class MakeTurn {
         } else {
             if (self.getState() == HockeyistState.SWINGING) {
                 if (puckOwnerId != self.getId()) return new Result(Do.CANCEL_STRIKE, Go.go(stop(), 0));
-                if (self.getSwingTicks() < 15 && safeToSwingMore()) {
+                if (self.getSwingTicks() < 20 && safeToSwingMore()) {
                     return Result.SWING;
                 } else {
                     Point goalPoint = determineGoalPoint(Players.opponent);
@@ -108,17 +120,18 @@ public class MakeTurn {
                     if (pass != null) return new Result(pass, Go.go(0, 0));
                 }
 
+                State state = State.of(self, world);
+                Point target = determineGoalPoint(Players.opponent);
+                double angle = self.getAngleTo(target.x, target.y);
                 Point attackPoint = determineAttackPoint();
-                // TODO: unhardcode
-                if (attackPoint.distance(self) > 100) {
-                    State state = State.of(self, world);
+                if (abs(angle) < Const.passSector / 5 && probabilityToScore(state, 0.75) > 0.85) {
+                    return new Result(Do.pass(1, angle), Go.go(stop(), angle));
+                } else if (me.distance(attackPoint) < 100 && shouldStartSwinging(state)) {
+                    return Result.SWING;
+                } else {
                     double bestGoResult = Double.MIN_VALUE;
                     Go bestGo = null;
-                    for (Go go : Arrays.asList(
-                            Go.go(1, 1), Go.go(1, -1), Go.go(1, 0), Go.go(1, 0.5), Go.go(1, -0.5)
-                            //TODO: ,Go.go(0, 1), Go.go(0, -1), Go.go(0, 0), Go.go(0, 0.5), Go.go(0, -0.5)
-                            //TODO: ,Go.go(-1, 1), Go.go(-1, -1), Go.go(-1, 0), Go.go(-1, 0.5), Go.go(-1, -0.5)
-                    )) {
+                    for (Go go : POSSIBLE_MOVES) {
                         double cur = evaluate(state, go, attackPoint);
                         if (bestGo == null || cur > bestGoResult) {
                             bestGoResult = cur;
@@ -127,16 +140,6 @@ public class MakeTurn {
                     }
                     assert bestGo != null;
                     return new Result(Do.NONE, bestGo);
-                } else {
-                    Point target = determineGoalPoint(Players.opponent);
-                    double angle = self.getAngleTo(target.x, target.y);
-                    if (abs(angle) < PI / 180) {
-                        return Result.SWING;
-                    } else if (-Const.passSector / 5 < abs(angle) && abs(angle) < Const.passSector / 5) {
-                        return new Result(Do.pass(1, angle), Go.go(stop(), angle));
-                    } else {
-                        return new Result(Do.NONE, Go.go(stop(), angle));
-                    }
                 }
             }
         }
@@ -144,10 +147,10 @@ public class MakeTurn {
 
     // TODO: use
     private static boolean shouldStartSwinging(@NotNull State state) {
-        for (int i = 0; i < Const.swingActionCooldownTicks; i++) {
+        for (int i = 0; i < 20; i++) {
             state = state.apply(Go.go(0, 0));
         }
-        return probabilityToScore(state, 0.875) > 0.75 && angleDifferenceToOptimal(state, state.me().direction()) < 3 * PI / 180;
+        return /*probabilityToScore(state, 1) > 0.75 && */angleDifferenceToOptimal(state) < 3 * PI / 180;
     }
 
     @NotNull
@@ -217,11 +220,9 @@ public class MakeTurn {
     @NotNull
     private Point determineAttackPoint() {
         // TODO: unhardcode
-        double x = Static.CENTER.x + Players.attack.x * 272.0;
+        double x = Static.CENTER.x + Players.attack.x * 150;
 
-        double y = me.y < Static.CENTER.y
-                   ? Players.opponent.getNetTop() - Const.goalNetHeight / 6
-                   : Players.opponent.getNetBottom() + Const.goalNetHeight / 6;
+        double y = me.y < Static.CENTER.y ? Const.rinkTop + 50 : Const.rinkBottom - 50;
 
         return Point.of(x, y);
     }
@@ -232,7 +233,7 @@ public class MakeTurn {
         score += evaluate(state, attackPoint);
 
         for (int t = 2; t <= 10; t++) {
-            state = state.apply(Go.go(0, 0));
+            state = state.apply(go);
             score += evaluate(state, attackPoint) / t / 2;
         }
 
@@ -281,14 +282,22 @@ public class MakeTurn {
             penalty += Util.sqr(max(150 - me.distance(corner), 0));
         }
 
-/*
-        penalty += max(1 - myVelocity.length(), 0) * 10;
+        if (me.distance(attackPoint) < 100) {
+            penalty -= pow(1 - angleDifferenceAfterSwing(state) / PI, 20) * 1000;
+            penalty += max(myVelocity.length() - 3.5, 0) * 10; // TODO: correctly determine my effective speed
+        } else {
+            penalty -= 1000;
+            penalty += 20;
+        }
 
+        penalty += max(abs(myDirection.angleTo(myVelocity)) - PI / 2, 0) * 50;
+
+/*
         Position enemyGoalie = state.enemyGoalie();
         if (enemyGoalie != null) penalty += max(200 - enemyGoalie.point().distance(me), 0);
 
         // TODO: angle diff should be very small for non-0
-        penalty -= Util.sqr(probabilityToScore(state, 0.875) * pow(1 - angleDifferenceToOptimal(state, myDirection) / PI, 4)) * 200;
+        penalty -= Util.sqr(probabilityToScore(state, 1) * pow(1 - angleDifferenceToOptimal(state, myDirection) / PI, 4)) * 200;
 */
 
         return -penalty;
@@ -341,14 +350,21 @@ public class MakeTurn {
     }
 
     // TODO: (!) handle overtime with no goalies
-    private static double angleDifferenceToOptimal(@NotNull State state, @NotNull Vec strikeDirection) {
+    private static double angleDifferenceToOptimal(@NotNull State state) {
         Point puck = state.puck.point();
         Point goalNetNearby = Players.opponentNearbyCorner(puck);
         Point goalNetDistant = Players.opponentDistantCorner(puck);
         Vec verticalMovement = Vec.of(goalNetNearby, goalNetDistant).normalize();
         Point target = goalNetDistant.shift(verticalMovement.multiply(-Static.PUCK_RADIUS));
         Vec trajectory = Vec.of(puck, target);
-        return abs(strikeDirection.angleTo(trajectory));
+        return abs(state.me().direction().angleTo(trajectory));
+    }
+
+    private static double angleDifferenceAfterSwing(@NotNull State state) {
+        for (int i = 0; i < 20; i++) {
+            state = state.apply(Go.go(0, 0));
+        }
+        return angleDifferenceToOptimal(state);
     }
 
     @NotNull
