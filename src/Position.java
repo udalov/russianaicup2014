@@ -41,11 +41,11 @@ public class Position {
 
     // TODO: all constants depend on the hockeyist's condition
     @NotNull
-    public Position move(@NotNull Go go) {
+    public Position move(@NotNull Go go, double friction) {
         double turn = max(min(go.turn, Const.hockeyistTurnAngleFactor), -Const.hockeyistTurnAngleFactor);
         double speedup = go.speedup * (go.speedup > 0 ? Const.hockeyistSpeedUpFactor : Const.hockeyistSpeedDownFactor);
         Vec direction = Vec.of(angle + turn);
-        Vec speed = velocity().plus(direction.multiply(speedup)).multiply(0.98);
+        Vec speed = velocity().plus(direction.multiply(speedup)).multiply(1 - friction);
         return new Position(x + speed.x, y + speed.y, speed.x, speed.y, direction.angle());
     }
 

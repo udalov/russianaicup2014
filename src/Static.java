@@ -8,4 +8,7 @@ public class Static {
             Point.of(Const.rinkRight, Const.rinkTop),
             Point.of(Const.rinkRight, Const.rinkBottom)
     };
+
+    public static final double HOCKEYIST_RADIUS = 30;
+    public static final double PUCK_RADIUS = 20;
 }

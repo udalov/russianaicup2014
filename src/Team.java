@@ -1,23 +1,15 @@
 import model.Hockeyist;
 import model.HockeyistType;
-import model.Player;
 import model.World;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class Team {
-    // 1 if we are on the left, -1 if we are on the right
-    public final int attack;
-
     private int currentTick = -1;
     private final List<Decision> decisions = new ArrayList<>(3);
 
     public int lastGoalTick;
-
-    public Team() {
-        attack = Players.me.getNetFront() < Static.CENTER.x ? 1 : -1;
-    }
 
     public void solveTick(@NotNull World world) {
         if (currentTick == world.getTick()) return;
@@ -29,7 +21,7 @@ public class Team {
         }
 
         List<Hockeyist> myFieldPlayers = myFieldPlayers(world);
-        Point defensePoint = determineDefensePoint(world);
+        Point defensePoint = determineDefensePoint();
 
         long puckOwnerPlayerId = world.getPuck().getOwnerPlayerId();
         if (puckOwnerPlayerId == Players.me.getId()) {
@@ -105,10 +97,9 @@ public class Team {
     }
 
     @NotNull
-    private Point determineDefensePoint(@NotNull World world) {
-        // TODO: radius can be different for different hockeyists
-        double radius = world.getHockeyists()[0].getRadius();
-        return Point.of(Players.me.getNetFront() + attack * (radius * 3.2), (Players.me.getNetTop() + Players.me.getNetBottom()) / 2);
+    private static Point determineDefensePoint() {
+        return Point.of(Players.me.getNetFront(), (Players.me.getNetTop() + Players.me.getNetBottom()) / 2)
+                .shift(Players.attack.multiply(Static.HOCKEYIST_RADIUS * 3.2));
     }
 
     @NotNull

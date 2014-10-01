@@ -48,7 +48,7 @@ public class MakeTurn {
             if (self.getRemainingCooldownTicks() == 0) {
                 if (puckOwnerId == -1 || puck.getOwnerPlayerId() != Players.me.getId()) {
                     double distanceToPuck = defensePoint.distance(puck);
-                    double puckSpeedAgainstOurGoal = Vec.velocity(puck).projection(Vec.of(-team.attack, 0));
+                    double puckSpeedAgainstOurGoal = Vec.velocity(puck).projection(Players.defense);
                     // TODO: unhardcode
                     if (distanceToPuck < 400 || (puckSpeedAgainstOurGoal > 3 && (abs(Players.me.getNetFront() - puck.getX()) < 700))) {
                         return new Result(tryHitNearbyEnemiesOrPuck(), goToUnit(puck));
@@ -102,8 +102,8 @@ public class MakeTurn {
                     }
                 }
 
-                if (abs(self.getAngle()) > 3 * PI / 4 && team.attack == 1 ||
-                    abs(self.getAngle()) < PI / 4 && team.attack == -1) {
+                if (abs(self.getAngle()) > 3 * PI / 4 && Players.attack.x == 1 ||
+                    abs(self.getAngle()) < PI / 4 && Players.attack.x == -1) {
                     Do pass = tryPass();
                     if (pass != null) return new Result(pass, Go.go(0, 0));
                 }
@@ -140,6 +140,14 @@ public class MakeTurn {
                 }
             }
         }
+    }
+
+    // TODO: use
+    private static boolean shouldStartSwinging(@NotNull State state) {
+        for (int i = 0; i < Const.swingActionCooldownTicks; i++) {
+            state = state.apply(Go.go(0, 0));
+        }
+        return probabilityToScore(state, 0.875) > 0.75 && angleDifferenceToOptimal(state, state.me().direction()) < 3 * PI / 180;
     }
 
     @NotNull
@@ -209,7 +217,7 @@ public class MakeTurn {
     @NotNull
     private Point determineAttackPoint() {
         // TODO: unhardcode
-        double x = Static.CENTER.x + team.attack * 272.0;
+        double x = Static.CENTER.x + Players.attack.x * 272.0;
 
         double y = me.y < Static.CENTER.y
                    ? Players.opponent.getNetTop() - Const.goalNetHeight / 6
@@ -239,13 +247,12 @@ public class MakeTurn {
         Point me = myPosition.point();
         Vec myDirection = myPosition.direction();
 
-        penalty += me.distance(attackPoint);
+        penalty += me.distance(attackPoint)/* TODO: / 100*/;
 
         double dangerousAngle = PI / 2;
 
-        for (int i = 0; i < state.unit.length; i++) {
-            if (!(state.unit[i] instanceof Hockeyist)) continue;
-            Hockeyist hockeyist = (Hockeyist) state.unit[i];
+        for (int i = 0; i < state.hockeyists.length; i++) {
+            Hockeyist hockeyist = state.hockeyists[i];
             if (hockeyist.getId() == state.self().getId() || hockeyist.getType() == HockeyistType.GOALIE) continue;
             Position enemy = state.pos[i];
 
@@ -274,7 +281,74 @@ public class MakeTurn {
             penalty += Util.sqr(max(150 - me.distance(corner), 0));
         }
 
+/*
+        penalty += max(1 - myVelocity.length(), 0) * 10;
+
+        Position enemyGoalie = state.enemyGoalie();
+        if (enemyGoalie != null) penalty += max(200 - enemyGoalie.point().distance(me), 0);
+
+        // TODO: angle diff should be very small for non-0
+        penalty -= Util.sqr(probabilityToScore(state, 0.875) * pow(1 - angleDifferenceToOptimal(state, myDirection) / PI, 4)) * 200;
+*/
+
         return -penalty;
+    }
+
+    public static double probabilityToScore(@NotNull State state, double strikePower) {
+        double result = 1;
+
+        Position position = state.me();
+        Vec velocity = position.velocity();
+
+        Position goalie = state.enemyGoalie();
+        if (goalie != null) {
+            Point puck = state.puck.point();
+
+            Point goalNetNearby = Players.opponentNearbyCorner(puck);
+            Point goalNetDistant = Players.opponentDistantCorner(puck);
+            Vec verticalMovement = Vec.of(goalNetNearby, goalNetDistant).normalize();
+            Point target = goalNetDistant.shift(verticalMovement.multiply(-Static.PUCK_RADIUS));
+            Vec trajectory = Vec.of(puck, target);
+
+            if (abs(puck.x - target.x) <= 2 * Static.HOCKEYIST_RADIUS) result *= 0;
+
+            Vec goalieHorizontalShift = Players.attack.multiply(-Static.HOCKEYIST_RADIUS);
+            Point goalieNearby = goalNetNearby.shift(verticalMovement.multiply(Static.HOCKEYIST_RADIUS)).shift(goalieHorizontalShift);
+            Point goalieDistant = goalNetDistant.shift(verticalMovement.multiply(-Static.HOCKEYIST_RADIUS)).shift(goalieHorizontalShift);
+
+            // TODO: attributes and condition
+            double puckSpeed = Const.struckPuckInitialSpeedFactor * strikePower + velocity.length() * cos(position.angle - velocity.angle());
+
+            boolean withinGoalieReach = min(goalieNearby.y, goalieDistant.y) <= puck.y && puck.y <= max(goalieNearby.y, goalieDistant.y);
+            double puckStartY = (withinGoalieReach ? puck.y : goalieNearby.y) - puckSpeed * sin(trajectory.angleTo(verticalMovement));
+            Line line = Line.between(puck, target);
+            Point puckStart = line.when(puckStartY);
+
+            // TODO: friction
+            double time = puckStart.distance(target) / puckSpeed;
+            Point goalieFinish = goalie.point().shift(verticalMovement.multiply(time * Const.goalieMaxSpeed));
+
+            // Now we should check if distance between the following segments is >= radius(puck) + radius(goalie):
+            // (goalie, goalieFinish) and (puckStart, target)
+            boolean intersects = signum(Vec.of(puck, goalieNearby).crossProduct(trajectory)) !=
+                                 signum(Vec.of(puck, goalieFinish).crossProduct(trajectory));
+            if (intersects) result *= 0;
+
+            result *= min(1, line.project(goalieFinish).distance(goalieFinish) / (Static.HOCKEYIST_RADIUS + Static.PUCK_RADIUS));
+        }
+
+        return result;
+    }
+
+    // TODO: (!) handle overtime with no goalies
+    private static double angleDifferenceToOptimal(@NotNull State state, @NotNull Vec strikeDirection) {
+        Point puck = state.puck.point();
+        Point goalNetNearby = Players.opponentNearbyCorner(puck);
+        Point goalNetDistant = Players.opponentDistantCorner(puck);
+        Vec verticalMovement = Vec.of(goalNetNearby, goalNetDistant).normalize();
+        Point target = goalNetDistant.shift(verticalMovement.multiply(-Static.PUCK_RADIUS));
+        Vec trajectory = Vec.of(puck, target);
+        return abs(strikeDirection.angleTo(trajectory));
     }
 
     @NotNull
@@ -315,8 +389,8 @@ public class MakeTurn {
     private Point determineGoalPoint(@NotNull Player defendingPlayer) {
         double x = defendingPlayer.getNetFront();
         double y = puck.getY() < Static.CENTER.y
-                   ? defendingPlayer.getNetBottom() + puck.getRadius()
-                   : defendingPlayer.getNetTop() - puck.getRadius();
+                   ? defendingPlayer.getNetBottom() + Static.PUCK_RADIUS
+                   : defendingPlayer.getNetTop() - Static.PUCK_RADIUS;
         return Point.of(x, y);
     }
 

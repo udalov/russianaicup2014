@@ -1,10 +1,11 @@
 import model.Hockeyist;
+import model.HockeyistType;
 import model.World;
 
 import java.awt.*;
 import java.util.Stack;
 
-import static java.lang.Math.round;
+import static java.lang.Math.*;
 
 @SuppressWarnings("MagicNumber")
 public class MyRenderer {
@@ -22,6 +23,8 @@ public class MyRenderer {
     public void renderBefore() {
         renderPuckAndOwnerSpeed();
         renderPuckOwnerDirection();
+        renderGoaliePosition();
+        // renderProbabilityToScore();
     }
 
     public void renderAfter() {
@@ -50,6 +53,56 @@ public class MyRenderer {
         g.setColor(new Color(0, 0, 0, 0x40));
         drawLine(puck.x, puck.y, target.x, target.y);
         restore();
+    }
+
+    private void renderGoaliePosition() {
+        for (Hockeyist hockeyist : world.getHockeyists()) {
+            if (hockeyist.getType() == HockeyistType.GOALIE) {
+                g.drawString(String.format("goalie position %.3f", hockeyist.getY()), 220, 70);
+                return;
+            }
+        }
+    }
+
+    private void renderProbabilityToScore() {
+        Hockeyist puckOwner = findPuckOwner();
+        if (puckOwner == null || puckOwner.getPlayerId() != Players.me.getId()) return;
+
+        State state = State.of(puckOwner, world);
+        int enemyGoalie = findEnemyGoalie(state);
+        Position gp = state.pos[enemyGoalie];
+
+        save();
+        for (int x = (int) Static.CENTER.x + 2; x <= Const.rinkRight; x += 4) {
+            for (int y = (int) Const.rinkTop + 2; y <= Const.rinkBottom; y += 4) {
+                Point puck = Point.of(x, y);
+                Vec direction = Vec.of(puck, findFarCorner(puck)).normalize();
+                Point me = puck.shift(direction.multiply(-55));
+                State cur = new State(state.pos, state.hockeyists, new Position(x, y, 0, 0, direction.angle()), state.myIndex);
+                cur.pos[cur.myIndex] = new Position(me.x, me.y, state.me().speedX, state.me().speedY, Vec.direction(puckOwner).angle());
+                cur.pos[enemyGoalie] = new Position(gp.x, max(min(y, 530), 390), gp.speedX, gp.speedY, gp.angle);
+                float p = (float) MakeTurn.probabilityToScore(cur, 1);
+                g.setColor(new Color(p, 0f, 1 - p));
+                g.fillRect(x - 2, y - 2, 5, 5);
+            }
+        }
+        restore();
+    }
+
+    private static int findEnemyGoalie(@NotNull State state) {
+        for (int i = 0; i < state.hockeyists.length; i++) {
+            Hockeyist hockeyist = state.hockeyists[i];
+            if (hockeyist.getType() == HockeyistType.GOALIE && hockeyist.getPlayerId() == Players.opponent.getId()) return i;
+        }
+        throw new AssertionError();
+    }
+
+    @NotNull
+    private static Point findFarCorner(@NotNull Point me) {
+        double y = me.y < Static.CENTER.y
+                   ? Const.goalNetTop + Const.goalNetHeight - Static.PUCK_RADIUS
+                   : Const.goalNetTop + Static.PUCK_RADIUS;
+        return Point.of(Const.rinkRight, y);
     }
 
     @Nullable
