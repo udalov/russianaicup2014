@@ -2,7 +2,12 @@
 
 set -e
 
-ticks=90000
+java -jar dist/russianaicup.jar my old 100000 123456 -3 | sed "s/^/my 3x3 old /"
+java -jar dist/russianaicup.jar old my 100000 456789 -3 | sed "s/^/old 3x3 my /"
+java -jar dist/russianaicup.jar my old 100000 123456 | sed "s/^/my 2x2 old /"
+java -jar dist/russianaicup.jar old my 100000 456789 | sed "s/^/old 2x2 my /"
+
+ticks=100000
 team1=my
 team2=old
 
@@ -16,10 +21,10 @@ fi
 
 for seed in {100..149}
 do
-    java -jar dist/russianaicup.jar $team1 $team2 $ticks $seed | sed "s/^/$seed /" | tee -a $log
+    java -jar dist/russianaicup.jar $team1 $team2 $ticks $seed -3 | sed "s/^/$seed /" | tee -a $log
 done
 
 for seed in {150..199}
 do
-    java -jar dist/russianaicup.jar $team2 $team1 $ticks $seed | sed "s/^/$seed /" | tee -a $log
+    java -jar dist/russianaicup.jar $team2 $team1 $ticks $seed -3 | sed "s/^/$seed /" | tee -a $log
 done
