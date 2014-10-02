@@ -4,7 +4,6 @@ public abstract class Position {
     public final double speedX;
     public final double speedY;
     public final double angle;
-    // TODO: angular speed
 
     public Position(double x, double y, double speedX, double speedY, double angle) {
         this.x = x;

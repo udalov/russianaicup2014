@@ -78,11 +78,12 @@ public class MyRenderer {
                 Point puck = Point.of(x, y);
                 Vec direction = Vec.of(puck, findFarCorner(puck)).normalize();
                 Point me = puck.shift(direction.multiply(-55));
-                State cur = new State(state.pos, new PuckPosition(state.puck.puck, x, y, 0, 0, direction.angle()), state.myIndex);
+                State cur = new State(state.pos, new PuckPosition(state.puck.puck, x, y, 0, 0, direction.angle()),
+                                      state.myIndex, state.puckOwnerIndex);
                 cur.pos[cur.myIndex] = new HockeyistPosition(state.pos[state.myIndex].hockeyist, me.x, me.y,
-                                                             state.me().speedX, state.me().speedY, Vec.direction(puckOwner).angle());
+                                                             state.me().speedX, state.me().speedY, Vec.direction(puckOwner).angle(), 0);
                 cur.pos[enemyGoalie] = new HockeyistPosition(state.pos[enemyGoalie].hockeyist, gp.x, max(min(y, 530), 390),
-                                                             gp.speedX, gp.speedY, gp.angle);
+                                                             gp.speedX, gp.speedY, gp.angle, 0);
                 float p = (float) MakeTurn.probabilityToScore(cur, 1);
                 g.setColor(new Color(p, 0f, 1 - p));
                 g.fillRect(x - 2, y - 2, 5, 5);

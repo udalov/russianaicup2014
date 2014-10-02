@@ -12,27 +12,32 @@ public class State {
     public final HockeyistPosition[] pos;
     public final PuckPosition puck;
     public final int myIndex;
+    public final int puckOwnerIndex;
 
-    public State(@NotNull HockeyistPosition[] pos, @NotNull PuckPosition puck, int myIndex) {
+    public State(@NotNull HockeyistPosition[] pos, @NotNull PuckPosition puck, int myIndex, int puckOwnerIndex) {
         this.pos = pos;
         this.puck = puck;
         this.myIndex = myIndex;
+        this.puckOwnerIndex = puckOwnerIndex;
     }
 
     @NotNull
     public static State of(@NotNull Hockeyist self, @NotNull World world) {
         List<HockeyistPosition> positions = new ArrayList<>(9);
         int myIndex = -1;
+        int puckOwnerIndex = -1;
         for (Hockeyist hockeyist : world.getHockeyists()) {
             if (hockeyist.getId() == self.getId()) myIndex = positions.size();
+            if (hockeyist.getId() == world.getPuck().getOwnerHockeyistId()) puckOwnerIndex = positions.size();
             positions.add(HockeyistPosition.of(hockeyist));
         }
         assert myIndex >= 0 : "No self: " + Arrays.toString(world.getHockeyists());
-        return new State(positions.toArray(new HockeyistPosition[positions.size()]), PuckPosition.of(world.getPuck()), myIndex);
+        return new State(positions.toArray(new HockeyistPosition[positions.size()]), PuckPosition.of(world.getPuck()),
+                         myIndex, puckOwnerIndex);
     }
 
     @Nullable
-    public Position enemyGoalie() {
+    public HockeyistPosition enemyGoalie() {
         long opponentId = Players.opponent.getId();
         for (HockeyistPosition position : pos) {
             Hockeyist hockeyist = position.hockeyist;
@@ -43,8 +48,17 @@ public class State {
         return null;
     }
 
+    @Nullable
+    public HockeyistPosition puckOwner() {
+        if (puckOwnerIndex == -1) return null;
+        for (int i = 0; i < pos.length; i++) {
+            if (i == puckOwnerIndex) return pos[i];
+        }
+        return null;
+    }
+
     @NotNull
-    public Position me() {
+    public HockeyistPosition me() {
         return pos[myIndex];
     }
 
@@ -59,8 +73,9 @@ public class State {
         for (int i = 0, n = positions.length; i < n; i++) {
             positions[i] = positions[i].move(i == myIndex ? go : DEFAULT_DIRECTION);
         }
-        PuckPosition newPuck = puck.move();
-        return new State(positions, newPuck, myIndex);
+        HockeyistPosition puckOwner = puckOwner();
+        PuckPosition newPuck = puckOwner == null ? puck.move() : puck.inFrontOf(puckOwner);
+        return new State(positions, newPuck, myIndex, puckOwnerIndex);
     }
 
     @Override

@@ -16,8 +16,14 @@ public class PuckPosition extends Position {
 
     @NotNull
     public PuckPosition move() {
-        // TODO: puck is placed right in front of its owner!!!
         Vec velocity = velocity().multiply(0.999);
         return new PuckPosition(puck, x + velocity.x, y + velocity.y, velocity.x, velocity.y, angle);
+    }
+
+    @NotNull
+    public PuckPosition inFrontOf(@NotNull HockeyistPosition position) {
+        Vec direction = Vec.of(position.angle);
+        Point point = position.point().shift(direction.multiply(55));
+        return new PuckPosition(puck, point.x, point.y, position.speedX, position.speedY, 0);
     }
 }

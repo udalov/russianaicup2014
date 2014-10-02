@@ -117,16 +117,16 @@ public class MakeTurn {
                 State state = State.of(self, world);
                 Point target = determineGoalPoint(Players.opponent);
                 double angle = self.getAngleTo(target.x, target.y);
-                Point attackPoint = determineAttackPoint();
-                if (abs(angle) < Const.passSector / 5 && probabilityToScore(state, 0.75) > 0.85) {
-                    return new Result(Do.pass(1, angle), Go.go(stop(), angle));
-                } else if (me.distance(attackPoint) < 100 && shouldStartSwinging(state)) {
+                Point[] attackPoints = determineAttackPoints(me);
+                if (abs(angle) < Const.passSector / 5 && probabilityToScore(state, 0.75) > 0.8) {
+                    return new Result(Do.pass(1, angle), Go.go(stop(), angle)); // TODO: angle from puck to target?!
+                } else if (min(me.distance(attackPoints[0]), me.distance(attackPoints[1])) < 100 && shouldStartSwinging(state)) {
                     return Result.SWING;
                 } else {
                     double bestGoResult = Double.MIN_VALUE;
                     Go bestGo = null;
                     for (Go go : iteratePossibleMoves()) {
-                        double cur = evaluate(state, go, attackPoint);
+                        double cur = evaluate(state, go);
                         if (bestGo == null || cur > bestGoResult) {
                             bestGoResult = cur;
                             bestGo = go;
@@ -225,29 +225,33 @@ public class MakeTurn {
     }
 
     @NotNull
-    private Point determineAttackPoint() {
+    private static Point[] determineAttackPoints(@NotNull Point me) {
         // TODO: unhardcode
-        double x = Static.CENTER.x + Players.attack.x * 150;
+        double x1 = Static.CENTER.x + Players.attack.x * 150;
+        double y1 = me.y < Static.CENTER.y ? Const.rinkTop + 50 : Const.rinkBottom - 50;
 
-        double y = me.y < Static.CENTER.y ? Const.rinkTop + 50 : Const.rinkBottom - 50;
+        double x2 = Static.CENTER.x + Players.attack.x * 272;
+        double y2 = me.y < Static.CENTER.y
+                    ? Players.opponent.getNetTop() - Const.goalNetHeight / 6
+                    : Players.opponent.getNetBottom() + Const.goalNetHeight / 6;
 
-        return Point.of(x, y);
+        return new Point[]{Point.of(x1, y1), Point.of(x2, y2)};
     }
 
-    private static double evaluate(@NotNull State currentState, @NotNull Go go, @NotNull Point attackPoint) {
+    private static double evaluate(@NotNull State currentState, @NotNull Go go) {
         double score = 0;
         State state = currentState.apply(go);
-        score += evaluate(state, attackPoint);
+        score += evaluate(state);
 
         for (int t = 2; t <= 10; t++) {
             state = state.apply(go);
-            score += evaluate(state, attackPoint) / t / 2;
+            score += evaluate(state) / t / 2;
         }
 
         return score;
     }
 
-    private static double evaluate(@NotNull State state, @NotNull Point attackPoint) {
+    private static double evaluate(@NotNull State state) {
         double penalty = 0;
 
         Position myPosition = state.me();
@@ -255,7 +259,9 @@ public class MakeTurn {
         Point me = myPosition.point();
         Vec myDirection = myPosition.direction();
 
-        penalty += me.distance(attackPoint) / 100;
+        Point[] attackPoints = determineAttackPoints(me);
+        double distanceToAttackPoint = min(me.distance(attackPoints[0]), me.distance(attackPoints[1]));
+        penalty += distanceToAttackPoint / 2;
 
         double dangerousAngle = PI / 2;
 
@@ -288,7 +294,7 @@ public class MakeTurn {
             penalty += Util.sqr(max(150 - me.distance(corner), 0));
         }
 
-        if (me.distance(attackPoint) < 100) {
+        if (distanceToAttackPoint < 100) {
             penalty -= pow(1 - angleDifferenceAfterSwing(state) / PI, 20) * 1000;
             penalty += max(myVelocity.length() - 3.5, 0) * 10; // TODO: correctly determine my effective speed
         } else {
