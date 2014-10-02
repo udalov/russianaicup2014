@@ -4,26 +4,31 @@ public class PuckPosition extends Position {
     // Use with caution, coordinates are outdated
     public final Puck puck;
 
-    public PuckPosition(@NotNull Puck puck, double x, double y, double speedX, double speedY, double angle) {
-        super(x, y, speedX, speedY, angle);
+    public PuckPosition(@NotNull Puck puck, @NotNull Point point, @NotNull Vec velocity) {
+        super(point, velocity);
         this.puck = puck;
     }
 
     @NotNull
     public static PuckPosition of(@NotNull Puck puck) {
-        return new PuckPosition(puck, puck.getX(), puck.getY(), puck.getSpeedX(), puck.getSpeedY(), puck.getAngle());
+        return new PuckPosition(puck, Point.of(puck), Vec.velocity(puck));
     }
 
     @NotNull
     public PuckPosition move() {
-        Vec velocity = velocity().multiply(0.999);
-        return new PuckPosition(puck, x + velocity.x, y + velocity.y, velocity.x, velocity.y, angle);
+        Vec velocity = this.velocity.multiply(0.999);
+        return new PuckPosition(puck, point.shift(velocity), velocity);
     }
 
     @NotNull
     public PuckPosition inFrontOf(@NotNull HockeyistPosition position) {
         Vec direction = Vec.of(position.angle);
-        Point point = position.point().shift(direction.multiply(Const.puckBindingRange));
-        return new PuckPosition(puck, point.x, point.y, position.speedX, position.speedY, 0);
+        Point point = position.point.shift(direction.multiply(Const.puckBindingRange));
+        return new PuckPosition(puck, point, position.velocity);
+    }
+
+    @Override
+    public String toString() {
+        return String.format("%s velocity %s", point, velocity);
     }
 }

@@ -230,7 +230,7 @@ public class MakeTurn {
 
     @NotNull
     private static Point[] determineAttackPoints(@NotNull State state) {
-        Point me = state.me().point();
+        Point me = state.me().point;
 
         // TODO: unhardcode
         double x1 = Static.CENTER.x + Players.attack.x * 150;
@@ -260,9 +260,9 @@ public class MakeTurn {
     private static double evaluate(@NotNull State startingState, @NotNull State state) {
         double penalty = 0;
 
-        Position myPosition = state.me();
-        Vec myVelocity = myPosition.velocity();
-        Point me = myPosition.point();
+        HockeyistPosition myPosition = state.me();
+        Vec myVelocity = myPosition.velocity;
+        Point me = myPosition.point;
         Vec myDirection = myPosition.direction();
 
         Point[] attackPoints = determineAttackPoints(state);
@@ -275,13 +275,13 @@ public class MakeTurn {
             Hockeyist hockeyist = enemy.hockeyist;
             if (hockeyist.getId() == state.self().getId() || hockeyist.getType() == HockeyistType.GOALIE) continue;
 
-            double distance = me.distance(enemy.point());
+            double distance = me.distance(enemy.point);
             if (!hockeyist.isTeammate() && distance < 150) penalty += sqrt(150 - distance);
 
-            double angleToEnemy = abs(myPosition.direction().angleTo(Vec.of(me, enemy.point())));
+            double angleToEnemy = abs(myDirection.angleTo(Vec.of(me, enemy.point)));
             if (angleToEnemy > dangerousAngle) continue;
 
-            double convergenceSpeed = myVelocity.length() < 1e-6 ? 0 : 1 - enemy.velocity().projection(myVelocity);
+            double convergenceSpeed = myVelocity.length() < 1e-6 ? 0 : 1 - enemy.velocity.projection(myVelocity);
             if (distance > 150 && convergenceSpeed < 20) continue;
 
             penalty += (hockeyist.isTeammate() ? 30 : 150) * (1 - abs(angleToEnemy) / dangerousAngle);
@@ -308,7 +308,7 @@ public class MakeTurn {
             penalty += 20;
         }
 
-        penalty += max(50 - startingState.me().point().distance(me), 0);
+        penalty += max(50 - startingState.me().point.distance(me), 0);
 
         penalty += max(abs(myDirection.angleTo(myVelocity)) - PI / 2, 0) * 50;
 
@@ -326,12 +326,12 @@ public class MakeTurn {
     public static double probabilityToScore(@NotNull State state, double strikePower) {
         double result = 1;
 
-        Position position = state.me();
-        Vec velocity = position.velocity();
+        HockeyistPosition position = state.me();
+        Vec velocity = position.velocity;
 
         Position goalie = state.enemyGoalie();
         if (goalie != null) {
-            Point puck = state.puck.point();
+            Point puck = state.puck.point;
 
             Point goalNetNearby = Players.opponentNearbyCorner(puck);
             Point goalNetDistant = Players.opponentDistantCorner(puck);
@@ -355,7 +355,7 @@ public class MakeTurn {
 
             // TODO: friction
             double time = puckStart.distance(target) / puckSpeed;
-            Point goalieFinish = goalie.point().shift(verticalMovement.multiply(time * Const.goalieMaxSpeed));
+            Point goalieFinish = goalie.point.shift(verticalMovement.multiply(time * Const.goalieMaxSpeed));
 
             // Now we should check if distance between the following segments is >= radius(puck) + radius(goalie):
             // (goalie, goalieFinish) and (puckStart, target)
@@ -371,7 +371,7 @@ public class MakeTurn {
 
     // TODO: (!) handle overtime with no goalies
     private static double angleDifferenceToOptimal(@NotNull State state) {
-        Point puck = state.puck.point();
+        Point puck = state.puck.point;
         Point goalNetNearby = Players.opponentNearbyCorner(puck);
         Point goalNetDistant = Players.opponentDistantCorner(puck);
         Vec verticalMovement = Vec.of(goalNetNearby, goalNetDistant).normalize();
