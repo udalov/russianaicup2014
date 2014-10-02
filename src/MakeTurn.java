@@ -117,24 +117,28 @@ public class MakeTurn {
                 State state = State.of(self, world);
                 Point target = determineGoalPoint(Players.opponent);
                 double angle = self.getAngleTo(target.x, target.y);
-                Point[] attackPoints = determineAttackPoints(me);
-                if (abs(angle) < Const.passSector / 5 && probabilityToScore(state, 0.75) > 0.8) {
-                    return new Result(Do.pass(1, angle), Go.go(stop(), angle)); // TODO: angle from puck to target?!
-                } else if (min(me.distance(attackPoints[0]), me.distance(attackPoints[1])) < 100 && shouldStartSwinging(state)) {
-                    return Result.SWING;
-                } else {
-                    double bestGoResult = Double.MIN_VALUE;
-                    Go bestGo = null;
-                    for (Go go : iteratePossibleMoves()) {
-                        double cur = evaluate(state, go);
-                        if (bestGo == null || cur > bestGoResult) {
-                            bestGoResult = cur;
-                            bestGo = go;
-                        }
+                Point[] attackPoints = determineAttackPoints(state);
+                double distanceToStrikingPoint = me.distance(attackPoints[0]);
+                double distanceToPassingPoint = me.distance(attackPoints[1]);
+                if (min(distanceToPassingPoint, distanceToStrikingPoint) < 100) {
+                    if (distanceToPassingPoint < 100 && abs(angle) < Const.passSector / 5 && probabilityToScore(state, 0.75) > 0.65) {
+                        double correctAngle = Vec.of(Point.of(puck), target).angleTo(Vec.direction(self));
+                        return new Result(Do.pass(1, angle), Go.go(stop(), correctAngle));
+                    } else if (shouldStartSwinging(state)) {
+                        return Result.SWING;
                     }
-                    assert bestGo != null;
-                    return new Result(Do.NONE, bestGo);
                 }
+                double bestGoResult = Double.MIN_VALUE;
+                Go bestGo = null;
+                for (Go go : iteratePossibleMoves()) {
+                    double cur = evaluate(state, go);
+                    if (bestGo == null || cur > bestGoResult) {
+                        bestGoResult = cur;
+                        bestGo = go;
+                    }
+                }
+                assert bestGo != null;
+                return new Result(Do.NONE, bestGo);
             }
         }
     }
@@ -225,7 +229,9 @@ public class MakeTurn {
     }
 
     @NotNull
-    private static Point[] determineAttackPoints(@NotNull Point me) {
+    private static Point[] determineAttackPoints(@NotNull State state) {
+        Point me = state.me().point();
+
         // TODO: unhardcode
         double x1 = Static.CENTER.x + Players.attack.x * 150;
         double y1 = me.y < Static.CENTER.y ? Const.rinkTop + 50 : Const.rinkBottom - 50;
@@ -238,20 +244,20 @@ public class MakeTurn {
         return new Point[]{Point.of(x1, y1), Point.of(x2, y2)};
     }
 
-    private static double evaluate(@NotNull State currentState, @NotNull Go go) {
+    private static double evaluate(@NotNull State startingState, @NotNull Go go) {
         double score = 0;
-        State state = currentState.apply(go);
-        score += evaluate(state);
+        State state = startingState.apply(go);
+        score += evaluate(startingState, state);
 
         for (int t = 2; t <= 10; t++) {
             state = state.apply(go);
-            score += evaluate(state) / t / 2;
+            score += evaluate(startingState, state) / t / 2;
         }
 
         return score;
     }
 
-    private static double evaluate(@NotNull State state) {
+    private static double evaluate(@NotNull State startingState, @NotNull State state) {
         double penalty = 0;
 
         Position myPosition = state.me();
@@ -259,7 +265,7 @@ public class MakeTurn {
         Point me = myPosition.point();
         Vec myDirection = myPosition.direction();
 
-        Point[] attackPoints = determineAttackPoints(me);
+        Point[] attackPoints = determineAttackPoints(state);
         double distanceToAttackPoint = min(me.distance(attackPoints[0]), me.distance(attackPoints[1]));
         penalty += distanceToAttackPoint / 2;
 
@@ -301,6 +307,8 @@ public class MakeTurn {
             penalty -= 1000;
             penalty += 20;
         }
+
+        penalty += max(50 - startingState.me().point().distance(me), 0);
 
         penalty += max(abs(myDirection.angleTo(myVelocity)) - PI / 2, 0) * 50;
 

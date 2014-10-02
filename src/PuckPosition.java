@@ -23,7 +23,7 @@ public class PuckPosition extends Position {
     @NotNull
     public PuckPosition inFrontOf(@NotNull HockeyistPosition position) {
         Vec direction = Vec.of(position.angle);
-        Point point = position.point().shift(direction.multiply(55));
+        Point point = position.point().shift(direction.multiply(Const.puckBindingRange));
         return new PuckPosition(puck, point.x, point.y, position.speedX, position.speedY, 0);
     }
 }

@@ -77,7 +77,7 @@ public class MyRenderer {
             for (int y = (int) Const.rinkTop + 2; y <= Const.rinkBottom; y += 4) {
                 Point puck = Point.of(x, y);
                 Vec direction = Vec.of(puck, findFarCorner(puck)).normalize();
-                Point me = puck.shift(direction.multiply(-55));
+                Point me = puck.shift(direction.multiply(-Const.puckBindingRange));
                 State cur = new State(state.pos, new PuckPosition(state.puck.puck, x, y, 0, 0, direction.angle()),
                                       state.myIndex, state.puckOwnerIndex);
                 cur.pos[cur.myIndex] = new HockeyistPosition(state.pos[state.myIndex].hockeyist, me.x, me.y,

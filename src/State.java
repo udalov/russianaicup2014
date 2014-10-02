@@ -70,12 +70,43 @@ public class State {
     @NotNull
     public State apply(@NotNull Go go) {
         HockeyistPosition[] positions = Arrays.copyOf(pos, pos.length);
-        for (int i = 0, n = positions.length; i < n; i++) {
+        PuckPosition newPuck = null;
+        int n = positions.length;
+        for (int i = 0; i < n; i++) {
             positions[i] = positions[i].move(i == myIndex ? go : DEFAULT_DIRECTION);
+            if (i == puckOwnerIndex) {
+                newPuck = puck.inFrontOf(positions[i]);
+                // TODO: improve collisions of hockeyists with walls
+                if (isOutsideRink(newPuck.point(), Static.PUCK_RADIUS) || isOutsideRink(positions[i].point(), Static.HOCKEYIST_RADIUS)) {
+                    newPuck = puck;
+                    positions[i] = pos[i];
+                }
+            } else {
+                // TODO: improve collisions of puck with walls
+                if (isOutsideRink(positions[i].point(), Static.HOCKEYIST_RADIUS)) {
+                    positions[i] = pos[i];
+                }
+            }
         }
-        HockeyistPosition puckOwner = puckOwner();
-        PuckPosition newPuck = puckOwner == null ? puck.move() : puck.inFrontOf(puckOwner);
-        return new State(positions, newPuck, myIndex, puckOwnerIndex);
+
+        for (int i = 0; i < n; i++) {
+            for (int j = i + 1; j < n; j++) {
+                // TODO: improve collisions of hockeyists
+                if (positions[i].point().distance(positions[j].point()) < 2 * Static.HOCKEYIST_RADIUS) {
+                    positions[i] = pos[i];
+                    positions[j] = pos[j];
+                }
+            }
+        }
+
+        return new State(positions, newPuck != null ? newPuck : puck.move(), myIndex, puckOwnerIndex);
+    }
+
+    private static boolean isOutsideRink(@NotNull Point point, double radius) {
+        return point.x - Const.rinkLeft < radius ||
+               Const.rinkRight - point.x < radius ||
+               point.y - Const.rinkTop < radius ||
+               Const.rinkBottom - point.y < radius;
     }
 
     @Override
