@@ -78,9 +78,11 @@ public class MyRenderer {
                 Point puck = Point.of(x, y);
                 Vec direction = Vec.of(puck, findFarCorner(puck)).normalize();
                 Point me = puck.shift(direction.multiply(-55));
-                State cur = new State(state.pos, state.hockeyists, new Position(x, y, 0, 0, direction.angle()), state.myIndex);
-                cur.pos[cur.myIndex] = new Position(me.x, me.y, state.me().speedX, state.me().speedY, Vec.direction(puckOwner).angle());
-                cur.pos[enemyGoalie] = new Position(gp.x, max(min(y, 530), 390), gp.speedX, gp.speedY, gp.angle);
+                State cur = new State(state.pos, new PuckPosition(state.puck.puck, x, y, 0, 0, direction.angle()), state.myIndex);
+                cur.pos[cur.myIndex] = new HockeyistPosition(state.pos[state.myIndex].hockeyist, me.x, me.y,
+                                                             state.me().speedX, state.me().speedY, Vec.direction(puckOwner).angle());
+                cur.pos[enemyGoalie] = new HockeyistPosition(state.pos[enemyGoalie].hockeyist, gp.x, max(min(y, 530), 390),
+                                                             gp.speedX, gp.speedY, gp.angle);
                 float p = (float) MakeTurn.probabilityToScore(cur, 1);
                 g.setColor(new Color(p, 0f, 1 - p));
                 g.fillRect(x - 2, y - 2, 5, 5);
@@ -90,8 +92,8 @@ public class MyRenderer {
     }
 
     private static int findEnemyGoalie(@NotNull State state) {
-        for (int i = 0; i < state.hockeyists.length; i++) {
-            Hockeyist hockeyist = state.hockeyists[i];
+        for (int i = 0; i < state.pos.length; i++) {
+            Hockeyist hockeyist = state.pos[i].hockeyist;
             if (hockeyist.getType() == HockeyistType.GOALIE && hockeyist.getPlayerId() == Players.opponent.getId()) return i;
         }
         throw new AssertionError();

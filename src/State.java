@@ -9,40 +9,35 @@ import java.util.List;
 public class State {
     public static final Go DEFAULT_DIRECTION = Go.go(0, 0);
 
-    public final Position[] pos;
-    public final Hockeyist[] hockeyists;
-    public final Position puck;
+    public final HockeyistPosition[] pos;
+    public final PuckPosition puck;
     public final int myIndex;
 
-    public State(@NotNull Position[] pos, @NotNull Hockeyist[] hockeyists, @NotNull Position puck, int myIndex) {
+    public State(@NotNull HockeyistPosition[] pos, @NotNull PuckPosition puck, int myIndex) {
         this.pos = pos;
-        this.hockeyists = hockeyists;
         this.puck = puck;
         this.myIndex = myIndex;
     }
 
     @NotNull
     public static State of(@NotNull Hockeyist self, @NotNull World world) {
-        List<Position> positions = new ArrayList<>(9);
-        List<Hockeyist> hockeyists = new ArrayList<>(9);
+        List<HockeyistPosition> positions = new ArrayList<>(9);
         int myIndex = -1;
         for (Hockeyist hockeyist : world.getHockeyists()) {
-            if (hockeyist.getId() == self.getId()) myIndex = hockeyists.size();
-            positions.add(Position.of(hockeyist));
-            hockeyists.add(hockeyist);
+            if (hockeyist.getId() == self.getId()) myIndex = positions.size();
+            positions.add(HockeyistPosition.of(hockeyist));
         }
         assert myIndex >= 0 : "No self: " + Arrays.toString(world.getHockeyists());
-        return new State(positions.toArray(new Position[positions.size()]), hockeyists.toArray(new Hockeyist[hockeyists.size()]),
-                         Position.of(world.getPuck()), myIndex);
+        return new State(positions.toArray(new HockeyistPosition[positions.size()]), PuckPosition.of(world.getPuck()), myIndex);
     }
 
     @Nullable
     public Position enemyGoalie() {
         long opponentId = Players.opponent.getId();
-        for (int i = 0; i < hockeyists.length; i++) {
-            Hockeyist hockeyist = this.hockeyists[i];
+        for (HockeyistPosition position : pos) {
+            Hockeyist hockeyist = position.hockeyist;
             if (hockeyist.getPlayerId() == opponentId && hockeyist.getType() == HockeyistType.GOALIE) {
-                return pos[i];
+                return position;
             }
         }
         return null;
@@ -55,18 +50,17 @@ public class State {
 
     @NotNull
     public Hockeyist self() {
-        return hockeyists[myIndex];
+        return pos[myIndex].hockeyist;
     }
 
     @NotNull
     public State apply(@NotNull Go go) {
-        Position[] positions = Arrays.copyOf(pos, pos.length);
-        Hockeyist[] hockeyists = Arrays.copyOf(this.hockeyists, this.hockeyists.length);
-        for (int i = 0, n = hockeyists.length; i < n; i++) {
-            positions[i] = positions[i].moveHockeyist(i == myIndex ? go : DEFAULT_DIRECTION, hockeyists[i]);
+        HockeyistPosition[] positions = Arrays.copyOf(pos, pos.length);
+        for (int i = 0, n = positions.length; i < n; i++) {
+            positions[i] = positions[i].move(i == myIndex ? go : DEFAULT_DIRECTION);
         }
-        Position newPuck = puck.movePuck();
-        return new State(positions, hockeyists, newPuck, myIndex);
+        PuckPosition newPuck = puck.move();
+        return new State(positions, newPuck, myIndex);
     }
 
     @Override

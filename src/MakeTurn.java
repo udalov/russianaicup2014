@@ -259,10 +259,9 @@ public class MakeTurn {
 
         double dangerousAngle = PI / 2;
 
-        for (int i = 0; i < state.hockeyists.length; i++) {
-            Hockeyist hockeyist = state.hockeyists[i];
+        for (HockeyistPosition enemy : state.pos) {
+            Hockeyist hockeyist = enemy.hockeyist;
             if (hockeyist.getId() == state.self().getId() || hockeyist.getType() == HockeyistType.GOALIE) continue;
-            Position enemy = state.pos[i];
 
             double distance = me.distance(enemy.point());
             if (!hockeyist.isTeammate() && distance < 150) penalty += sqrt(150 - distance);
