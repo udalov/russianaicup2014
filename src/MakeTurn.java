@@ -264,14 +264,14 @@ public class MakeTurn {
             if (hockeyist.getId() == state.self().getId() || hockeyist.getType() == HockeyistType.GOALIE) continue;
             Position enemy = state.pos[i];
 
+            double distance = me.distance(enemy.point());
+            if (!hockeyist.isTeammate() && distance < 150) penalty += sqrt(150 - distance);
+
             double angleToEnemy = abs(myPosition.direction().angleTo(Vec.of(me, enemy.point())));
             if (angleToEnemy > dangerousAngle) continue;
 
-            double distance = me.distance(enemy.point());
             double convergenceSpeed = myVelocity.length() < 1e-6 ? 0 : 1 - enemy.velocity().projection(myVelocity);
             if (distance > 150 && convergenceSpeed < 20) continue;
-
-            if (!hockeyist.isTeammate() && distance < 150) penalty += sqrt(150 - distance);
 
             penalty += (hockeyist.isTeammate() ? 30 : 150) * (1 - abs(angleToEnemy) / dangerousAngle);
         }
