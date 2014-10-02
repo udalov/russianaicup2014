@@ -93,8 +93,16 @@ public class State {
             for (int j = i + 1; j < n; j++) {
                 // TODO: improve collisions of hockeyists
                 if (positions[i].point.distance(positions[j].point) < 2 * Static.HOCKEYIST_RADIUS) {
-                    positions[i] = pos[i];
-                    positions[j] = pos[j];
+                    HockeyistPosition first = pos[i];
+                    HockeyistPosition second = pos[j];
+                    // TODO: this is so ad-hoc and wrong...
+                    double newSpeed = (first.velocity.length() + second.velocity.length()) * (1 + 0.65 * 0.65) / 2; // Thank you, ud1
+                    positions[i] = new HockeyistPosition(first.hockeyist, first.point,
+                                                         first.velocity.normalize().multiply(-newSpeed),
+                                                         first.angle, first.angularSpeed);
+                    positions[j] = new HockeyistPosition(second.hockeyist, second.point,
+                                                         second.velocity.normalize().multiply(-newSpeed),
+                                                         second.angle, second.angularSpeed);
                 }
             }
         }
