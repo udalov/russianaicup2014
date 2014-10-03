@@ -199,10 +199,12 @@ public class MakeTurn {
         Vec myDirection = Vec.direction(self);
         for (Hockeyist ally : world.getHockeyists()) {
             if (!ally.isTeammate() || ally.getType() == HockeyistType.GOALIE || ally.getId() == self.getId()) continue;
-            double angle = self.getAngleTo(ally);
+            HockeyistPosition allyPosition = HockeyistPosition.of(ally);
+            Point point = Util.puckBindingPoint(allyPosition);
+            double angle = self.getAngleTo(point.x, point.y);
             if (-game.getPassSector() / 2 < angle && angle < game.getPassSector() / 2) {
-                if (abs(myDirection.angleTo(Vec.direction(ally))) > 2 * PI / 3) {
-                    return Do.pass(min(400.0 / self.getDistanceTo(ally), 1.0), angle);
+                if (abs(myDirection.angleTo(allyPosition.direction())) > 2 * PI / 3) {
+                    return Do.pass(min(400.0 / me.distance(point), 1.0), angle);
                 }
             }
         }
