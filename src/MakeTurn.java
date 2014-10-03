@@ -38,7 +38,7 @@ public class MakeTurn {
         Decision decision = team.getDecision(self.getId());
         Decision.Role role = decision.role;
 
-        if (role == Decision.Role.DEFENSE) {
+        if (role == Decision.Role.DEFENSE || role == Decision.Role.MIDFIELD) {
             Point defensePoint = decision.defensePoint;
 
             // TODO: unhardcode

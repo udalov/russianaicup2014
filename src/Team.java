@@ -23,18 +23,24 @@ public class Team {
         List<Hockeyist> myFieldPlayers = myFieldPlayers(world);
         Point defensePoint = determineDefensePoint();
 
+        Hockeyist closestToDefend = findClosestToPoint(myFieldPlayers, defensePoint);
+
         long puckOwnerPlayerId = world.getPuck().getOwnerPlayerId();
         if (puckOwnerPlayerId == Players.me.getId()) {
             long puckOwnerId = world.getPuck().getOwnerHockeyistId();
             for (Hockeyist hockeyist : myFieldPlayers) {
                 long id = hockeyist.getId();
-                if (id == puckOwnerId) decisions.add(new Decision(id, Decision.Role.ATTACK, defensePoint));
-                else decisions.add(new Decision(id, Decision.Role.DEFENSE, defensePoint));
+                if (id == puckOwnerId) {
+                    decisions.add(new Decision(id, Decision.Role.ATTACK, defensePoint));
+                } else if (id == closestToDefend.getId()) {
+                    decisions.add(new Decision(id, Decision.Role.DEFENSE, defensePoint));
+                } else {
+                    decisions.add(new Decision(id, Decision.Role.MIDFIELD, Static.CENTER.shift(Players.defense.multiply(100))));
+                }
             }
             return;
         }
 
-        Hockeyist closestToDefend = findClosestToPoint(myFieldPlayers, defensePoint);
         Hockeyist defender = closestToDefend;
 
         // If the defender is really close to the puck, he should run to it

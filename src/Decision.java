@@ -11,6 +11,7 @@ public class Decision {
 
     public enum Role {
         DEFENSE,
+        MIDFIELD,
         ATTACK
     }
 }
