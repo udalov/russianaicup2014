@@ -28,6 +28,11 @@ public class Util {
         return hypot(unit.getSpeedX(), unit.getSpeedY());
     }
 
+    @NotNull
+    public static Point puckBindingPoint(@NotNull HockeyistPosition hockeyist) {
+        return hockeyist.point.shift(hockeyist.direction().multiply(Const.puckBindingRange));
+    }
+
     public static double effectiveAttribute(@NotNull Hockeyist hockeyist, double attribute) {
         return (0.75 + 0.25 * hockeyist.getStamina() / 2000) * attribute / 100;
     }

@@ -52,7 +52,7 @@ public class MakeTurn {
                     double puckSpeedAgainstOurGoal = Vec.velocity(puck).projection(Players.defense);
                     // TODO: unhardcode
                     if (distanceToPuck < 400 || (puckSpeedAgainstOurGoal > 3 && (abs(Players.me.getNetFront() - puck.getX()) < 700))) {
-                        return new Result(tryHitNearbyEnemiesOrPuck(), goToUnit(puck));
+                        return new Result(tryHitNearbyEnemiesOrPuck(), goToPuck());
                     }
                 }
             }
@@ -65,6 +65,7 @@ public class MakeTurn {
             if (defensePoint.distance(self) > 10) {
                 return new Result(tryBlockPuck(), Go.go(stop(), self.getAngleTo(puck)));
             }
+
             Point strikeTarget = determineGoalPoint(Players.me);
             Line strikeLine = Line.between(Point.of(puck), strikeTarget);
             Point catchAt = strikeLine.at(me.x);
@@ -91,12 +92,12 @@ public class MakeTurn {
 
             if (puckOwnerId == -1) {
                 if (isReachable(puck)) {
-                    return new Result(Do.TAKE_PUCK, Go.go(0, 0));
+                    return new Result(Do.TAKE_PUCK, goToPuck());
                 } else {
-                    return new Result(tryHitNearbyEnemiesOrPuck(), goToUnit(puck));
+                    return new Result(tryHitNearbyEnemiesOrPuck(), goToPuck());
                 }
             } else if (puckOwnerId != self.getId()) {
-                return new Result(tryHitNearbyEnemiesOrPuck(), goToUnit(puck));
+                return new Result(tryHitNearbyEnemiesOrPuck(), goToPuck());
             } else {
                 if (enemyHasNoGoalkeeper()) {
                     Point target = Point.of(Players.opponent.getNetFront(), Static.CENTER.y);
@@ -219,14 +220,23 @@ public class MakeTurn {
     }
 
     @NotNull
-    private Go goToUnit(@NotNull Unit unit) {
-        // TODO: unhardcode
-        double speed = max(Util.speed(self), 10);
-        double distance = self.getDistanceTo(unit);
-        Vec movement = Vec.velocity(unit).multiply(distance / speed);
-        Point futurePosition = Point.of(unit).shift(movement);
-        double angle = self.getAngleTo(futurePosition.x, futurePosition.y);
-        return Go.go(abs(angle) < PI / 2 ? 1 : stop(), angle);
+    private Go goToPuck() {
+        State startingState = State.of(self, world);
+        Go bestGo = null;
+        double best = Double.MAX_VALUE;
+        for (Go go : iteratePossibleMoves()) {
+            State state = startingState;
+            for (int i = 0; i < 30; i++) {
+                state = state.apply(i < 10 ? go : Go.go(0, 0));
+                double cur = Util.puckBindingPoint(state.me()).distance(state.puck.point);
+                if (cur < best) {
+                    best = cur;
+                    bestGo = go;
+                }
+            }
+        }
+        assert bestGo != null : "Unreachable puck";
+        return bestGo;
     }
 
     @NotNull
