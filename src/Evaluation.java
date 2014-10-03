@@ -50,20 +50,20 @@ public abstract class Evaluation {
 
             double dangerousAngle = PI / 2;
 
-            for (HockeyistPosition enemy : state.pos) {
-                Hockeyist hockeyist = enemy.hockeyist;
+            for (HockeyistPosition position : state.pos) {
+                Hockeyist hockeyist = position.hockeyist;
                 if (hockeyist.getId() == state.self().getId() || hockeyist.getType() == HockeyistType.GOALIE) continue;
 
-                double distance = me.distance(enemy.point);
-                if (!hockeyist.isTeammate() && distance < 150) penalty += sqrt(150 - distance);
+                double distance = me.distance(position.point);
+                if (!hockeyist.isTeammate()) penalty += sqrt(max(150 - distance, 0));
 
-                double angleToEnemy = abs(myDirection.angleTo(Vec.of(me, enemy.point)));
-                if (angleToEnemy > dangerousAngle) continue;
-
-                double convergenceSpeed = myVelocity.length() < 1e-6 ? 0 : 1 - enemy.velocity.projection(myVelocity);
-                if (distance > 150 && convergenceSpeed < 20) continue;
-
-                penalty += (hockeyist.isTeammate() ? 30 : 150) * (1 - abs(angleToEnemy) / dangerousAngle);
+                double angleToEnemy = abs(myDirection.angleTo(Vec.of(me, position.point)));
+                if (angleToEnemy <= dangerousAngle) {
+                    double convergenceSpeed = myVelocity.length() < 1e-6 ? 0 : 1 - position.velocity.projection(myVelocity);
+                    if (distance <= 150 || convergenceSpeed >= 20) {
+                        penalty += (hockeyist.isTeammate() ? 30 : 150) * (1 - angleToEnemy / dangerousAngle);
+                    }
+                }
             }
 
             Point future = me.shift(myDirection.multiply(10));

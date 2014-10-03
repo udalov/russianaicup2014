@@ -80,6 +80,14 @@ public class MakeTurn {
                 if (self.getSwingTicks() < 20 && safeToSwingMore()) {
                     return Result.SWING;
                 } else {
+                    if (enemyHasNoGoalkeeper()) {
+                        Line line = Line.between(me, me.shift(Vec.direction(self)));
+                        Point goal = line.at(Players.opponent.getNetFront());
+                        if (Players.opponent.getNetTop() + Static.PUCK_RADIUS <= goal.y &&
+                            goal.y <= Players.opponent.getNetBottom() + Static.PUCK_RADIUS) {
+                            return new Result(Do.STRIKE, Go.go(0, 0));
+                        }
+                    }
                     Point goalPoint = determineGoalPoint(Players.opponent);
                     double angle = self.getAngleTo(goalPoint.x, goalPoint.y);
                     if (abs(angle) > 8 * PI / 180) {
@@ -102,8 +110,9 @@ public class MakeTurn {
                 if (enemyHasNoGoalkeeper()) {
                     Point target = Point.of(Players.opponent.getNetFront(), Static.CENTER.y);
                     double angle = self.getAngleTo(target.x, target.y);
-                    if (Math.abs(angle) < PI / 50 && abs(me.x - Players.opponent.getNetFront()) > 100) {
-                        return Result.SWING;
+                    double distanceToOpponentGoal = me.distance(Players.opponentGoalCenter);
+                    if (abs(angle) < PI / 50 && distanceToOpponentGoal > 100) {
+                        return new Result(distanceToOpponentGoal > 500 ? Do.SWING : Do.STRIKE, Go.go(stop(), angle));
                     } else {
                         return new Result(Do.NONE, Go.go(stop(), angle));
                     }
