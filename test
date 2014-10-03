@@ -2,12 +2,7 @@
 
 set -e
 
-java -jar dist/russianaicup.jar my old 100000 123456 -3 | sed "s/^/my 3x3 old /"
-java -jar dist/russianaicup.jar old my 100000 456789 -3 | sed "s/^/old 3x3 my /"
-java -jar dist/russianaicup.jar my old 100000 123456 | sed "s/^/my 2x2 old /"
-java -jar dist/russianaicup.jar old my 100000 456789 | sed "s/^/old 2x2 my /"
-
-ticks=100000
+ticks=50000
 team1=my
 team2=old
 
