@@ -96,7 +96,7 @@ public class State {
                     HockeyistPosition first = pos[i];
                     HockeyistPosition second = pos[j];
                     // TODO: this is so ad-hoc and wrong...
-                    double newSpeed = (first.velocity.length() + second.velocity.length()) * (1 + 0.65 * 0.65) / 2; // Thank you, ud1
+                    double newSpeed = (first.velocity.length() + second.velocity.length()) * 0.25;
                     positions[i] = new HockeyistPosition(first.hockeyist, first.point,
                                                          first.velocity.normalize().multiply(-newSpeed),
                                                          first.angle, first.angularSpeed);
