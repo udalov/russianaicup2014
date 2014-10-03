@@ -28,8 +28,7 @@ public class Team {
 
         long puckOwnerPlayerId = world.getPuck().getOwnerPlayerId();
         // If the defender is really close to the puck, he should run to it
-        // TODO: do this even if the puck is owned by an enemy attacker, to tackle him
-        if (puckOwnerPlayerId == -1 && findClosestGlobalPlayerToPuck(world) == closestToDefend) {
+        if (puckOwnerPlayerId != Players.me.getId() && findClosestGlobalPlayerToPuck(world) == closestToDefend) {
             // TODO: unhardcode
             if (closestToDefend.getDistanceTo(world.getPuck()) < 500) {
                 List<Hockeyist> possibleDefenders = new ArrayList<>(myFieldPlayers);
