@@ -379,8 +379,8 @@ public class MakeTurn {
     private Point determineGoalPoint(@NotNull Player defendingPlayer) {
         double x = defendingPlayer.getNetFront();
         double y = puck.getY() < Static.CENTER.y
-                   ? defendingPlayer.getNetBottom() + Static.PUCK_RADIUS
-                   : defendingPlayer.getNetTop() - Static.PUCK_RADIUS;
+                   ? defendingPlayer.getNetBottom() - Static.PUCK_RADIUS
+                   : defendingPlayer.getNetTop() + Static.PUCK_RADIUS;
         return Point.of(x, y);
     }
 
