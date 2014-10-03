@@ -76,13 +76,13 @@ public class State {
             positions[i] = positions[i].move(i == myIndex ? go : DEFAULT_DIRECTION);
             if (i == puckOwnerIndex) {
                 newPuck = puck.inFrontOf(positions[i]);
-                // TODO: improve collisions of hockeyists with walls
+                // TODO: improve collisions of puck owner with walls
                 if (isOutsideRink(newPuck.point, Static.PUCK_RADIUS) || isOutsideRink(positions[i].point, Static.HOCKEYIST_RADIUS)) {
                     newPuck = puck;
                     positions[i] = pos[i];
                 }
             } else {
-                // TODO: improve collisions of puck with walls
+                // TODO: improve collisions of hockeyists with walls
                 if (isOutsideRink(positions[i].point, Static.HOCKEYIST_RADIUS)) {
                     positions[i] = pos[i];
                 }
@@ -107,7 +107,20 @@ public class State {
             }
         }
 
-        return new State(positions, newPuck != null ? newPuck : puck.move(), myIndex, puckOwnerIndex);
+        // TODO: support collisions of puck with goalies
+        if (newPuck == null) {
+            newPuck = puck.move();
+            if (isOutsideRink(newPuck.point, Static.PUCK_RADIUS)) {
+                boolean dampX = newPuck.point.x - Const.rinkLeft < Static.PUCK_RADIUS ||
+                                Const.rinkRight - newPuck.point.x < Static.PUCK_RADIUS;
+                boolean dampY = newPuck.point.y - Const.rinkTop < Static.PUCK_RADIUS ||
+                                Const.rinkBottom - newPuck.point.y < Static.PUCK_RADIUS;
+                Vec velocity = Vec.of(puck.velocity.x * (dampX ? -0.25 : 1), puck.velocity.y * (dampY ? -0.25 : 1));
+                newPuck = new PuckPosition(puck.puck, puck.point, velocity);
+            }
+        }
+
+        return new State(positions, newPuck, myIndex, puckOwnerIndex);
     }
 
     private static boolean isOutsideRink(@NotNull Point point, double radius) {
