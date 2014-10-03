@@ -25,6 +25,7 @@ public class MyRenderer {
         renderPuckOwnerDirection();
         renderGoaliePosition();
         // renderProbabilityToScore();
+        renderFuture();
     }
 
     public void renderAfter() {
@@ -87,6 +88,32 @@ public class MyRenderer {
                 g.setColor(new Color(p, 0f, 1 - p));
                 g.fillRect(x - 2, y - 2, 5, 5);
             }
+        }
+        restore();
+    }
+
+    private void renderFuture() {
+        Hockeyist puckOwner = findPuckOwner();
+        State state = State.of(puckOwner != null ? puckOwner : world.getHockeyists()[0], world);
+        for (int i = 0; i < 10; i++) {
+            state = state.apply(Go.go(0, 0));
+        }
+
+        save();
+        g.setColor(new Color(128, 128, 128));
+        for (HockeyistPosition position : state.pos) {
+            int x = (int) round(position.point.x);
+            int y = (int) round(position.point.y);
+            int r = (int) Static.HOCKEYIST_RADIUS;
+            g.drawArc(x - r, y - r, 2 * r, 2 * r, 0, 360);
+            drawLine(x, y, x + r * cos(position.angle), y + r * sin(position.angle));
+        }
+        {
+            int x = (int) round(state.puck.point.x);
+            int y = (int) round(state.puck.point.y);
+            int r = (int) Static.PUCK_RADIUS;
+            g.setColor(new Color(200, 200, 200));
+            g.fillArc(x - r, y - r, 2 * r, 2 * r, 0, 360);
         }
         restore();
     }
