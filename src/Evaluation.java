@@ -91,12 +91,19 @@ public abstract class Evaluation {
 
             penalty += max(abs(myDirection.angleTo(myVelocity)) - PI / 2, 0) * 50;
 
-/*
-        Position enemyGoalie = state.enemyGoalie();
-        if (enemyGoalie != null) penalty += max(200 - enemyGoalie.point().distance(me), 0);
+            if (Players.myGoalCenter.distance(me) < Players.opponentGoalCenter.distance(me)) {
+                penalty += Util.sqr(myDirection.angleTo(Players.attack)) * 50;
+            }
 
-        // TODO: angle diff should be very small for non-0
-        penalty -= Util.sqr(probabilityToScore(state, 1) * pow(1 - angleDifferenceToOptimal(state, myDirection) / PI, 4)) * 200;
+/*
+            Position enemyGoalie = state.enemyGoalie();
+            if (enemyGoalie != null) penalty += max(200 - enemyGoalie.point().distance(me), 0);
+
+            // TODO: angle diff should be very small for non-0
+            double probabilityToScore = MakeTurn.probabilityToScore(state, 1);
+            if (probabilityToScore > 0.7) {
+                penalty -= Util.sqr(probabilityToScore * pow(1 - angleDifferenceToOptimal(state) / PI, 4)) * 10;
+            }
 */
 
             return -penalty;

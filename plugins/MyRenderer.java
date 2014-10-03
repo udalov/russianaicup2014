@@ -25,7 +25,7 @@ public class MyRenderer {
         renderPuckOwnerDirection();
         renderGoaliePosition();
         // renderProbabilityToScore();
-        renderFuture();
+        // renderFuture();
     }
 
     public void renderAfter() {

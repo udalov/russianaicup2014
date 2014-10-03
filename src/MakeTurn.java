@@ -290,49 +290,45 @@ public class MakeTurn {
     }
 
     public static double probabilityToScore(@NotNull State state, double strikePower) {
-        double result = 1;
+        Position goalie = state.enemyGoalie();
+        if (goalie == null) return 1;
 
         HockeyistPosition position = state.me();
         Vec velocity = position.velocity;
 
-        Position goalie = state.enemyGoalie();
-        if (goalie != null) {
-            Point puck = state.puck.point;
+        Point puck = state.puck.point;
 
-            Point goalNetNearby = Players.opponentNearbyCorner(puck);
-            Point goalNetDistant = Players.opponentDistantCorner(puck);
-            Vec verticalMovement = Vec.of(goalNetNearby, goalNetDistant).normalize();
-            Point target = goalNetDistant.shift(verticalMovement.multiply(-Static.PUCK_RADIUS));
-            Vec trajectory = Vec.of(puck, target);
+        Point goalNetNearby = Players.opponentNearbyCorner(puck);
+        Point goalNetDistant = Players.opponentDistantCorner(puck);
+        Vec verticalMovement = Vec.of(goalNetNearby, goalNetDistant).normalize();
+        Point target = goalNetDistant.shift(verticalMovement.multiply(-Static.PUCK_RADIUS));
+        Vec trajectory = Vec.of(puck, target);
 
-            if (abs(puck.x - target.x) <= 2 * Static.HOCKEYIST_RADIUS) result *= 0;
+        if (abs(puck.x - target.x) <= 2 * Static.HOCKEYIST_RADIUS) return 0;
 
-            Vec goalieHorizontalShift = Players.attack.multiply(-Static.HOCKEYIST_RADIUS);
-            Point goalieNearby = goalNetNearby.shift(verticalMovement.multiply(Static.HOCKEYIST_RADIUS)).shift(goalieHorizontalShift);
-            Point goalieDistant = goalNetDistant.shift(verticalMovement.multiply(-Static.HOCKEYIST_RADIUS)).shift(goalieHorizontalShift);
+        Vec goalieHorizontalShift = Players.attack.multiply(-Static.HOCKEYIST_RADIUS);
+        Point goalieNearby = goalNetNearby.shift(verticalMovement.multiply(Static.HOCKEYIST_RADIUS)).shift(goalieHorizontalShift);
+        Point goalieDistant = goalNetDistant.shift(verticalMovement.multiply(-Static.HOCKEYIST_RADIUS)).shift(goalieHorizontalShift);
 
-            // TODO: attributes and condition
-            double puckSpeed = Const.struckPuckInitialSpeedFactor * strikePower + velocity.length() * cos(position.angle - velocity.angle());
+        // TODO: attributes and condition
+        double puckSpeed = Const.struckPuckInitialSpeedFactor * strikePower + velocity.length() * cos(position.angle - velocity.angle());
 
-            boolean withinGoalieReach = min(goalieNearby.y, goalieDistant.y) <= puck.y && puck.y <= max(goalieNearby.y, goalieDistant.y);
-            double puckStartY = (withinGoalieReach ? puck.y : goalieNearby.y) - puckSpeed * sin(trajectory.angleTo(verticalMovement));
-            Line line = Line.between(puck, target);
-            Point puckStart = line.when(puckStartY);
+        boolean withinGoalieReach = min(goalieNearby.y, goalieDistant.y) <= puck.y && puck.y <= max(goalieNearby.y, goalieDistant.y);
+        double puckStartY = (withinGoalieReach ? puck.y : goalieNearby.y) - puckSpeed * sin(trajectory.angleTo(verticalMovement));
+        Line line = Line.between(puck, target);
+        Point puckStart = line.when(puckStartY);
 
-            // TODO: friction
-            double time = puckStart.distance(target) / puckSpeed;
-            Point goalieFinish = goalie.point.shift(verticalMovement.multiply(time * Const.goalieMaxSpeed));
+        // TODO: friction
+        double time = puckStart.distance(target) / puckSpeed;
+        Point goalieFinish = goalie.point.shift(verticalMovement.multiply(time * Const.goalieMaxSpeed));
 
-            // Now we should check if distance between the following segments is >= radius(puck) + radius(goalie):
-            // (goalie, goalieFinish) and (puckStart, target)
-            boolean intersects = signum(Vec.of(puck, goalieNearby).crossProduct(trajectory)) !=
-                                 signum(Vec.of(puck, goalieFinish).crossProduct(trajectory));
-            if (intersects) result *= 0;
+        // Now we should check if distance between the following segments is >= radius(puck) + radius(goalie):
+        // (goalie, goalieFinish) and (puckStart, target)
+        boolean intersects = signum(Vec.of(puck, goalieNearby).crossProduct(trajectory)) !=
+                             signum(Vec.of(puck, goalieFinish).crossProduct(trajectory));
+        if (intersects) return 0;
 
-            result *= min(1, line.project(goalieFinish).distance(goalieFinish) / (Static.HOCKEYIST_RADIUS + Static.PUCK_RADIUS));
-        }
-
-        return result;
+        return min(1, line.project(goalieFinish).distance(goalieFinish) / (Static.HOCKEYIST_RADIUS + Static.PUCK_RADIUS));
     }
 
     @NotNull
