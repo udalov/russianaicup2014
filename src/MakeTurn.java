@@ -100,7 +100,12 @@ public class MakeTurn {
 
             if (puckOwnerId == -1) {
                 if (isReachable(puck)) {
-                    return new Result(Do.TAKE_PUCK, goToPuck());
+                    State state = State.of(self, world);
+                    if (canShoot(state) && Evaluation.angleDifferenceToOptimal(state) < 3 * PI / 180) {
+                        return new Result(Do.STRIKE, goToPuck());
+                    } else {
+                        return new Result(Do.TAKE_PUCK, goToPuck());
+                    }
                 } else {
                     return new Result(tryHitNearbyEnemiesOrPuck(), goToPuck());
                 }
@@ -152,6 +157,11 @@ public class MakeTurn {
                 return new Result(Do.NONE, bestGo);
             }
         }
+    }
+
+    private boolean canShoot(@NotNull State state) {
+        Point[] attackPoints = determineAttackPoints(state);
+        return min(me.distance(attackPoints[0]), me.distance(attackPoints[1])) < 100;
     }
 
     // TODO: use
@@ -354,6 +364,12 @@ public class MakeTurn {
     private static boolean isReachable(@NotNull Hockeyist from, @NotNull Unit unit) {
         double angle = from.getAngleTo(unit);
         return from.getDistanceTo(unit) <= Const.stickLength &&
+               -Const.stickSector / 2 <= angle && angle <= Const.stickSector / 2;
+    }
+
+    private static boolean isReachable(@NotNull HockeyistPosition from, @NotNull Point point) {
+        double angle = from.direction().angleTo(Vec.of(from.point, point));
+        return from.point.distance(point) <= Const.stickLength &&
                -Const.stickSector / 2 <= angle && angle <= Const.stickSector / 2;
     }
 
