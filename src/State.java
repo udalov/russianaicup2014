@@ -1,4 +1,5 @@
 import model.Hockeyist;
+import model.HockeyistState;
 import model.HockeyistType;
 import model.World;
 
@@ -50,11 +51,7 @@ public class State {
 
     @Nullable
     public HockeyistPosition puckOwner() {
-        if (puckOwnerIndex == -1) return null;
-        for (int i = 0; i < pos.length; i++) {
-            if (i == puckOwnerIndex) return pos[i];
-        }
-        return null;
+        return puckOwnerIndex != -1 ? pos[puckOwnerIndex] : null;
     }
 
     @NotNull
@@ -63,8 +60,36 @@ public class State {
     }
 
     @NotNull
-    public Hockeyist self() {
-        return pos[myIndex].hockeyist;
+    public Iterable<HockeyistPosition> all() {
+        return filterTeam(true, true);
+    }
+
+    @NotNull
+    public Iterable<HockeyistPosition> allies() {
+        return filterTeam(false, true);
+    }
+
+    @NotNull
+    public Iterable<HockeyistPosition> enemies() {
+        return filterTeam(false, false);
+    }
+
+    @NotNull
+    private Iterable<HockeyistPosition> filterTeam(boolean all, boolean allies) {
+        Hockeyist myHockeyist = pos[myIndex].hockeyist;
+        long myPlayerId = myHockeyist.getPlayerId();
+        long myId = myHockeyist.getId();
+        List<HockeyistPosition> result = new ArrayList<>(3);
+        for (HockeyistPosition position : pos) {
+            Hockeyist hockeyist = position.hockeyist;
+            if (hockeyist.getType() == HockeyistType.GOALIE ||
+                hockeyist.getId() == myId ||
+                hockeyist.getState() == HockeyistState.RESTING) continue;
+            if (all || ((hockeyist.getPlayerId() == myPlayerId) == allies)) {
+                result.add(position);
+            }
+        }
+        return result;
     }
 
     @NotNull

@@ -1,5 +1,4 @@
 import model.Hockeyist;
-import model.Unit;
 
 import static java.lang.StrictMath.*;
 
@@ -36,12 +35,20 @@ public class HockeyistPosition extends Position {
         return angleTo(other.x, other.y);
     }
 
-    public double angleTo(@NotNull Unit other) {
-        return angleTo(other.getX(), other.getY());
+    public double angleTo(@NotNull PuckPosition puck) {
+        return angleTo(puck.point.x, puck.point.y);
     }
 
     public double angleTo(double x, double y) {
         return Util.normalize(angle - atan2(y - point.y, x - point.x));
+    }
+
+    public long id() {
+        return hockeyist.getId();
+    }
+
+    public boolean teammate() {
+        return hockeyist.getPlayerId() == Players.me.getId();
     }
 
     @NotNull

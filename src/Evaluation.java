@@ -1,6 +1,3 @@
-import model.Hockeyist;
-import model.HockeyistType;
-
 import static java.lang.StrictMath.*;
 
 public abstract class Evaluation {
@@ -47,18 +44,15 @@ public abstract class Evaluation {
 
             double dangerousAngle = PI / 2;
 
-            for (HockeyistPosition position : state.pos) {
-                Hockeyist hockeyist = position.hockeyist;
-                if (hockeyist.getId() == state.self().getId() || hockeyist.getType() == HockeyistType.GOALIE) continue;
+            for (HockeyistPosition hockeyist : state.all()) {
+                double distance = me.distance(hockeyist);
+                if (!hockeyist.teammate()) penalty += sqrt(max(150 - distance, 0));
 
-                double distance = me.distance(position);
-                if (!hockeyist.isTeammate()) penalty += sqrt(max(150 - distance, 0));
-
-                double angleToEnemy = abs(me.angleTo(Vec.of(me, position)));
+                double angleToEnemy = abs(me.angleTo(Vec.of(me, hockeyist)));
                 if (angleToEnemy <= dangerousAngle) {
-                    double convergenceSpeed = me.velocity.length() < 1e-6 ? 0 : 1 - position.velocity.projection(me.velocity);
+                    double convergenceSpeed = me.velocity.length() < 1e-6 ? 0 : 1 - hockeyist.velocity.projection(me.velocity);
                     if (distance <= 150 || convergenceSpeed >= 20) {
-                        penalty += (hockeyist.isTeammate() ? 30 : 150) * (1 - angleToEnemy / dangerousAngle);
+                        penalty += (hockeyist.teammate() ? 30 : 150) * (1 - angleToEnemy / dangerousAngle);
                     }
                 }
             }

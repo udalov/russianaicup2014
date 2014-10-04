@@ -1,4 +1,7 @@
-import model.*;
+import model.Hockeyist;
+import model.HockeyistState;
+import model.Player;
+import model.World;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -10,19 +13,18 @@ public class MakeTurn {
     private final Hockeyist self;
     private final World world;
 
-    private final Puck puck;
-
     private final State current;
     private final HockeyistPosition me;
+    private final PuckPosition puck;
 
     public MakeTurn(@NotNull Team team, @NotNull Hockeyist self, @NotNull World world) {
         this.team = team;
         this.self = self;
         this.world = world;
-        this.puck = world.getPuck();
 
         this.current = State.of(self, world);
         this.me = current.me();
+        this.puck = current.puck;
     }
 
     @NotNull
@@ -32,13 +34,13 @@ public class MakeTurn {
         if (world.getMyPlayer().isJustScoredGoal()) return winningDance();
         if (world.getMyPlayer().isJustMissedGoal()) return losingDance();
 
-        long puckOwnerId = puck.getOwnerHockeyistId();
+        HockeyistPosition puckOwner = current.puckOwner();
 
-        Decision decision = team.getDecision(self.getId());
+        Decision decision = team.getDecision(me.id());
         Decision.Role role = decision.role;
 
         if (role == Decision.Role.DEFENSE || role == Decision.Role.MIDFIELD) {
-            if (puck.getOwnerPlayerId() == Players.me.getId()) {
+            if (puckOwner != null && puckOwner.id() == me.id()) {
                 return whatToDoWithPuck();
             }
 
@@ -50,11 +52,11 @@ public class MakeTurn {
             }
 
             if (self.getRemainingCooldownTicks() == 0) {
-                if (puckOwnerId == -1 || puck.getOwnerPlayerId() != Players.me.getId()) {
-                    double distanceToPuck = defensePoint.distance(puck);
-                    double puckSpeedAgainstOurGoal = Vec.velocity(puck).projection(Players.defense);
+                if (puckOwner == null || !puckOwner.teammate()) {
+                    double distanceToPuck = puck.distance(defensePoint);
+                    double puckSpeedAgainstOurGoal = puck.velocity.projection(Players.defense);
                     // TODO: unhardcode
-                    if (distanceToPuck < 400 || (puckSpeedAgainstOurGoal > 3 && (abs(Players.me.getNetFront() - puck.getX()) < 700))) {
+                    if (distanceToPuck < 400 || (puckSpeedAgainstOurGoal > 3 && (abs(Players.me.getNetFront() - puck.point.x) < 700))) {
                         return new Result(tryHitNearbyEnemiesOrPuck(), goToPuck());
                     }
                 }
@@ -70,7 +72,7 @@ public class MakeTurn {
             }
 
             Point strikeTarget = determineGoalPoint(Players.me);
-            Line strikeLine = Line.between(Point.of(puck), strikeTarget);
+            Line strikeLine = Line.between(puck.point, strikeTarget);
             double angleToPuck = me.angleTo(puck);
             double angle = angleToPuck < -PI / 2 ? -PI / 2 :
                            angleToPuck > PI / 2 ? PI / 2 :
@@ -78,11 +80,11 @@ public class MakeTurn {
             return new Result(tryBlockPuck(), Go.go(stop(), angle));
         } else {
             if (self.getState() == HockeyistState.SWINGING) {
-                if (puckOwnerId != self.getId()) return new Result(Do.CANCEL_STRIKE, Go.go(stop(), 0));
+                if (puckOwner == null || puckOwner.id() != me.id()) return new Result(Do.CANCEL_STRIKE, Go.go(stop(), 0));
                 if (self.getSwingTicks() < 20 && safeToSwingMore()) {
                     return Result.SWING;
                 } else {
-                    if (enemyHasNoGoalkeeper()) {
+                    if (current.enemyGoalie() == null) {
                         Point goal = Line.of(me.angle).at(Players.opponent.getNetFront());
                         if (Players.opponent.getNetTop() + Static.PUCK_RADIUS <= goal.y &&
                             goal.y <= Players.opponent.getNetBottom() + Static.PUCK_RADIUS) {
@@ -98,8 +100,8 @@ public class MakeTurn {
                 }
             }
 
-            if (puckOwnerId != self.getId()) {
-                if (isReachable(puck)) {
+            if (puckOwner == null || puckOwner.id() != me.id()) {
+                if (isPuckReachable()) {
                     if (canShoot(current) && Evaluation.angleDifferenceToOptimal(current) < 3 * PI / 180) {
                         return new Result(Do.STRIKE, goToPuck());
                     } else {
@@ -125,8 +127,8 @@ public class MakeTurn {
 
     @NotNull
     private Result whatToDoWithPuck() {
-        if (enemyHasNoGoalkeeper()) {
-            double angle = me.angleTo(Point.of(Players.opponent.getNetFront(), Static.CENTER.y));
+        if (current.enemyGoalie() == null) {
+            double angle = me.angleTo(Players.opponent.getNetFront(), Static.CENTER.y);
             double distanceToOpponentGoal = me.distance(Players.opponentGoalCenter);
             if (abs(angle) < PI / 50 && distanceToOpponentGoal > 100) {
                 return new Result(distanceToOpponentGoal > 500 ? Do.SWING : Do.STRIKE, Go.go(stop(), angle));
@@ -141,7 +143,7 @@ public class MakeTurn {
         }
 
 /*
-        Hockeyist attacker = findHockeyistCloserToEnemyGoal();
+        HockeyistPosition attacker = findHockeyistCloserToEnemyGoal();
         if (attacker != null) {
             Do pass = tryPass(attacker);
             if (pass != null) return new Result(pass, Go.go(0, 0));
@@ -155,7 +157,7 @@ public class MakeTurn {
         double distanceToPassingPoint = me.distance(attackPoints[1]);
         if (min(distanceToPassingPoint, distanceToStrikingPoint) < 100) {
             if (distanceToPassingPoint < 100 && abs(angle) < Const.passSector / 5 && probabilityToScore(current, 0.75) > 0.65) {
-                double correctAngle = Vec.of(Point.of(puck), target).angleTo(me.direction());
+                double correctAngle = Vec.of(puck.point, target).angleTo(me.direction());
                 return new Result(Do.pass(1, angle), Go.go(stop(), correctAngle));
             } else if (shouldStartSwinging(current)) {
                 return Result.SWING;
@@ -165,16 +167,14 @@ public class MakeTurn {
     }
 
     @Nullable
-    private Hockeyist findHockeyistCloserToEnemyGoal() {
+    private HockeyistPosition findHockeyistCloserToEnemyGoal() {
         double best = abs(me.point.x - Players.opponent.getNetFront());
-        Hockeyist result = null;
-        for (Hockeyist hockeyist : world.getHockeyists()) {
-            if (hockeyist.getPlayerId() == Players.opponent.getId() || hockeyist.getType() == HockeyistType.GOALIE) continue;
-            if (hockeyist.getId() == self.getId()) continue;
-            double cur = abs(hockeyist.getX() - Players.opponent.getNetFront());
+        HockeyistPosition result = null;
+        for (HockeyistPosition ally : current.allies()) {
+            double cur = abs(ally.point.x - Players.opponent.getNetFront());
             if (cur < best) {
                 best = cur;
-                result = hockeyist;
+                result = ally;
             }
         }
         return result;
@@ -227,18 +227,17 @@ public class MakeTurn {
 
     @NotNull
     private Result losingDance() {
-        Hockeyist closestEnemy = null;
+        HockeyistPosition closestEnemy = null;
         double bestDistance = Double.MAX_VALUE;
-        for (Hockeyist hockeyist : world.getHockeyists()) {
-            if (hockeyist.isTeammate() || hockeyist.getType() == HockeyistType.GOALIE) continue;
-            double cur = me.distance(hockeyist);
+        for (HockeyistPosition enemy : current.enemies()) {
+            double cur = me.distance(enemy);
             if (cur < bestDistance) {
                 bestDistance = cur;
-                closestEnemy = hockeyist;
+                closestEnemy = enemy;
             }
         }
         if (closestEnemy == null) return new Result(Do.NONE, Go.go(0, Const.hockeyistTurnAngleFactor));
-        return new Result(isReachable(closestEnemy) ? Do.STRIKE : Do.NONE, Go.go(1, me.angleTo(closestEnemy)));
+        return new Result(isReachable(me, closestEnemy) ? Do.STRIKE : Do.NONE, Go.go(1, me.angleTo(closestEnemy.point)));
     }
 
     @NotNull
@@ -249,9 +248,8 @@ public class MakeTurn {
     @Nullable
     private Do tryPass() {
         if (self.getRemainingCooldownTicks() > 0) return null;
-        for (Hockeyist ally : world.getHockeyists()) {
-            if (!ally.isTeammate() || ally.getType() == HockeyistType.GOALIE || ally.getId() == self.getId()) continue;
-            if (abs(me.angleTo(Vec.direction(ally))) > 2 * PI / 3) {
+        for (HockeyistPosition ally : current.allies()) {
+            if (abs(me.angleTo(ally.direction())) > 2 * PI / 3) {
                 Do pass = tryPass(ally);
                 if (pass != null) return pass;
             }
@@ -260,8 +258,8 @@ public class MakeTurn {
     }
 
     @Nullable
-    private Do tryPass(@NotNull Hockeyist ally) {
-        Point point = Util.puckBindingPoint(HockeyistPosition.of(ally));
+    private Do tryPass(@NotNull HockeyistPosition ally) {
+        Point point = Util.puckBindingPoint(ally);
         double angle = me.angleTo(point);
         if (abs(angle) < Const.passSector / 2) {
             return Do.pass(min(400.0 / me.distance(point), 1.0), angle);
@@ -271,16 +269,8 @@ public class MakeTurn {
 
     private boolean safeToSwingMore() {
         if (me.velocity.length() > 4) return false;
-        for (Hockeyist enemy : world.getHockeyists()) {
-            if (enemy.isTeammate() || enemy.getType() == HockeyistType.GOALIE) continue;
-            if (isReachable(enemy, puck) || isReachable(enemy, self)) return false;
-        }
-        return true;
-    }
-
-    private boolean enemyHasNoGoalkeeper() {
-        for (Hockeyist hockeyist : world.getHockeyists()) {
-            if (!hockeyist.isTeammate() && hockeyist.getType() == HockeyistType.GOALIE) return false;
+        for (HockeyistPosition enemy : current.enemies()) {
+            if (isReachable(enemy, current.puck) || isReachable(enemy, me)) return false;
         }
         return true;
     }
@@ -391,13 +381,12 @@ public class MakeTurn {
     @NotNull
     private Do tryHitNearbyEnemiesOrPuck() {
         if (self.getRemainingCooldownTicks() > 0) return Do.NONE;
-        for (Hockeyist hockeyist : world.getHockeyists()) {
-            if (hockeyist.isTeammate() || hockeyist.getType() == HockeyistType.GOALIE) continue;
-            if (isReachable(hockeyist)) return Do.STRIKE;
+        for (HockeyistPosition enemy : current.enemies()) {
+            if (isReachable(me, enemy)) return Do.STRIKE;
         }
-        if (isReachable(puck)) {
+        if (isPuckReachable()) {
             // TODO: something more clever, also take attributes into account
-            return Util.speed(puck) < 17 && puck.getOwnerHockeyistId() == -1 ? Do.TAKE_PUCK : Do.STRIKE;
+            return puck.velocity.length() < 17 && current.puckOwner() == null ? Do.TAKE_PUCK : Do.STRIKE;
         }
         return Do.NONE;
     }
@@ -405,33 +394,26 @@ public class MakeTurn {
     @NotNull
     private Do tryBlockPuck() {
         if (self.getRemainingCooldownTicks() > 0) return Do.NONE;
-        if (isReachable(puck)) {
+        if (isPuckReachable()) {
             // TODO: something more clever, also take attributes into account
-            return Util.speed(puck) < 17 ? Do.TAKE_PUCK : Do.STRIKE;
+            return puck.velocity.length() < 17 ? Do.TAKE_PUCK : Do.STRIKE;
         }
         return Do.NONE;
     }
 
-    private boolean isReachable(@NotNull Unit unit) {
-        return isReachable(self, unit);
-    }
-
-    private static boolean isReachable(@NotNull Hockeyist from, @NotNull Unit unit) {
-        double angle = from.getAngleTo(unit);
-        return from.getDistanceTo(unit) <= Const.stickLength &&
-               -Const.stickSector / 2 <= angle && angle <= Const.stickSector / 2;
+    private boolean isPuckReachable() {
+        return isReachable(me, current.puck);
     }
 
     private static boolean isReachable(@NotNull HockeyistPosition from, @NotNull Position position) {
         double angle = from.angleTo(Vec.of(from, position));
-        return from.distance(position) <= Const.stickLength &&
-               -Const.stickSector / 2 <= angle && angle <= Const.stickSector / 2;
+        return from.distance(position) <= Const.stickLength && abs(angle) <= Const.stickSector / 2;
     }
 
     @NotNull
     private Point determineGoalPoint(@NotNull Player defendingPlayer) {
         double x = defendingPlayer.getNetFront();
-        double y = puck.getY() < Static.CENTER.y
+        double y = puck.point.y < Static.CENTER.y
                    ? defendingPlayer.getNetBottom() - Static.PUCK_RADIUS
                    : defendingPlayer.getNetTop() + Static.PUCK_RADIUS;
         return Point.of(x, y);
