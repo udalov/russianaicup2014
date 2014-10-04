@@ -77,13 +77,13 @@ public class State {
             if (i == puckOwnerIndex) {
                 newPuck = puck.inFrontOf(positions[i]);
                 // TODO: improve collisions of puck owner with walls
-                if (isOutsideRink(newPuck.point, Static.PUCK_RADIUS) || isOutsideRink(positions[i].point, Static.HOCKEYIST_RADIUS)) {
+                if (isOutsideRink(newPuck, Static.PUCK_RADIUS) || isOutsideRink(positions[i], Static.HOCKEYIST_RADIUS)) {
                     newPuck = puck;
                     positions[i] = pos[i];
                 }
             } else {
                 // TODO: improve collisions of hockeyists with walls
-                if (isOutsideRink(positions[i].point, Static.HOCKEYIST_RADIUS)) {
+                if (isOutsideRink(positions[i], Static.HOCKEYIST_RADIUS)) {
                     positions[i] = pos[i];
                 }
             }
@@ -92,7 +92,7 @@ public class State {
         for (int i = 0; i < n; i++) {
             for (int j = i + 1; j < n; j++) {
                 // TODO: improve collisions of hockeyists
-                if (positions[i].point.distance(positions[j].point) < 2 * Static.HOCKEYIST_RADIUS) {
+                if (positions[i].distance(positions[j]) < 2 * Static.HOCKEYIST_RADIUS) {
                     HockeyistPosition first = pos[i];
                     HockeyistPosition second = pos[j];
                     // TODO: this is so ad-hoc and wrong...
@@ -110,7 +110,7 @@ public class State {
         // TODO: support collisions of puck with goalies
         if (newPuck == null) {
             newPuck = puck.move();
-            if (isOutsideRink(newPuck.point, Static.PUCK_RADIUS)) {
+            if (isOutsideRink(newPuck, Static.PUCK_RADIUS)) {
                 boolean dampX = newPuck.point.x - Const.rinkLeft < Static.PUCK_RADIUS ||
                                 Const.rinkRight - newPuck.point.x < Static.PUCK_RADIUS;
                 boolean dampY = newPuck.point.y - Const.rinkTop < Static.PUCK_RADIUS ||
@@ -123,7 +123,8 @@ public class State {
         return new State(positions, newPuck, myIndex, puckOwnerIndex);
     }
 
-    private static boolean isOutsideRink(@NotNull Point point, double radius) {
+    private static boolean isOutsideRink(@NotNull Position position, double radius) {
+        Point point = position.point;
         return point.x - Const.rinkLeft < radius ||
                Const.rinkRight - point.x < radius ||
                point.y - Const.rinkTop < radius ||

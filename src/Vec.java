@@ -22,6 +22,11 @@ public class Vec {
     }
 
     @NotNull
+    public static Vec of(@NotNull Position from, @NotNull Position to) {
+        return new Vec(to.point.x - from.point.x, to.point.y - from.point.y);
+    }
+
+    @NotNull
     public static Vec of(@NotNull Unit from, @NotNull Unit to) {
         return new Vec(to.getX() - from.getX(), to.getY() - from.getY());
     }

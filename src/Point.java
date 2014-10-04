@@ -3,6 +3,8 @@ import model.Unit;
 import static java.lang.StrictMath.sqrt;
 
 public class Point {
+    public static final Point ZERO = Point.of(0, 0);
+
     public final double x;
     public final double y;
 

@@ -20,7 +20,7 @@ public abstract class Evaluation {
         Vec verticalMovement = Vec.of(goalNetNearby, goalNetDistant).normalize();
         Point target = goalNetDistant.shift(verticalMovement.multiply(-Static.PUCK_RADIUS));
         Vec trajectory = Vec.of(puck, target);
-        return abs(state.me().direction().angleTo(trajectory));
+        return abs(state.me().angleTo(trajectory));
     }
 
     public static double angleDifferenceAfterSwing(@NotNull State state) {
@@ -39,10 +39,7 @@ public abstract class Evaluation {
         public double evaluate(@NotNull State state) {
             double penalty = 0;
 
-            HockeyistPosition myPosition = state.me();
-            Vec myVelocity = myPosition.velocity;
-            Point me = myPosition.point;
-            Vec myDirection = myPosition.direction();
+            HockeyistPosition me = state.me();
 
             Point[] attackPoints = MakeTurn.determineAttackPoints(state);
             double distanceToAttackPoint = min(me.distance(attackPoints[0]), me.distance(attackPoints[1]));
@@ -54,19 +51,19 @@ public abstract class Evaluation {
                 Hockeyist hockeyist = position.hockeyist;
                 if (hockeyist.getId() == state.self().getId() || hockeyist.getType() == HockeyistType.GOALIE) continue;
 
-                double distance = me.distance(position.point);
+                double distance = me.distance(position);
                 if (!hockeyist.isTeammate()) penalty += sqrt(max(150 - distance, 0));
 
-                double angleToEnemy = abs(myDirection.angleTo(Vec.of(me, position.point)));
+                double angleToEnemy = abs(me.angleTo(Vec.of(me, position)));
                 if (angleToEnemy <= dangerousAngle) {
-                    double convergenceSpeed = myVelocity.length() < 1e-6 ? 0 : 1 - position.velocity.projection(myVelocity);
+                    double convergenceSpeed = me.velocity.length() < 1e-6 ? 0 : 1 - position.velocity.projection(me.velocity);
                     if (distance <= 150 || convergenceSpeed >= 20) {
                         penalty += (hockeyist.isTeammate() ? 30 : 150) * (1 - angleToEnemy / dangerousAngle);
                     }
                 }
             }
 
-            Point future = me.shift(myDirection.multiply(10));
+            Point future = me.point.shift(me.direction().multiply(10));
             penalty += Util.sqr(max(Const.rinkLeft - future.x, 0)) * 10;
             penalty += Util.sqr(max(future.x - Const.rinkRight, 0)) * 10;
             penalty += Util.sqr(max(Const.rinkTop - future.y, 0)) * 10;
@@ -81,18 +78,18 @@ public abstract class Evaluation {
 
             if (distanceToAttackPoint < 100) {
                 penalty -= pow(1 - angleDifferenceAfterSwing(state) / PI, 20) * 1000;
-                penalty += max(myVelocity.length() - 3.5, 0) * 10; // TODO: correctly determine my effective speed
+                penalty += max(me.velocity.length() - 3.5, 0) * 10; // TODO: correctly determine my effective speed
             } else {
                 penalty -= 1000;
                 penalty += 20;
             }
 
-            penalty += max(50 - startingState.me().point.distance(me), 0);
+            penalty += max(50 - startingState.me().distance(me), 0);
 
-            penalty += max(abs(myDirection.angleTo(myVelocity)) - PI / 2, 0) * 50;
+            penalty += max(abs(me.angleTo(me.velocity)) - PI / 2, 0) * 50;
 
-            if (Players.myGoalCenter.distance(me) < Players.opponentGoalCenter.distance(me)) {
-                penalty += Util.sqr(myDirection.angleTo(Players.attack)) * 50;
+            if (me.distance(Players.myGoalCenter) < me.distance(Players.opponentGoalCenter)) {
+                penalty += Util.sqr(me.angleTo(Players.attack)) * 50;
             }
 
 /*

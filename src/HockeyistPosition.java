@@ -1,7 +1,7 @@
 import model.Hockeyist;
+import model.Unit;
 
-import static java.lang.StrictMath.max;
-import static java.lang.StrictMath.min;
+import static java.lang.StrictMath.*;
 
 public class HockeyistPosition extends Position {
     // Use with caution, coordinates are outdated
@@ -26,6 +26,22 @@ public class HockeyistPosition extends Position {
     @NotNull
     public Vec direction() {
         return Vec.of(angle);
+    }
+
+    public double angleTo(@NotNull Vec other) {
+        return Util.normalize(angle - other.angle());
+    }
+
+    public double angleTo(@NotNull Point other) {
+        return angleTo(other.x, other.y);
+    }
+
+    public double angleTo(@NotNull Unit other) {
+        return angleTo(other.getX(), other.getY());
+    }
+
+    public double angleTo(double x, double y) {
+        return Util.normalize(angle - atan2(y - point.y, x - point.x));
     }
 
     @NotNull

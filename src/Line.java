@@ -1,4 +1,6 @@
 import static java.lang.Math.abs;
+import static java.lang.StrictMath.cos;
+import static java.lang.StrictMath.sin;
 
 public class Line {
     // Ax + By = C
@@ -18,6 +20,11 @@ public class Line {
         double B = b.x - a.x;
         double C = A * a.x + B * a.y;
         return new Line(A, B, C);
+    }
+
+    @NotNull
+    public static Line of(double angle) {
+        return new Line(-sin(angle), cos(angle), 0);
     }
 
     public boolean contains(@NotNull Point p) {
