@@ -24,25 +24,9 @@ public class Team {
         Point defensePoint = determineDefensePoint();
 
         Hockeyist closestToDefend = findClosestToPoint(myFieldPlayers, defensePoint);
-
-        long puckOwnerPlayerId = world.getPuck().getOwnerPlayerId();
-        if (puckOwnerPlayerId == Players.me.getId()) {
-            long puckOwnerId = world.getPuck().getOwnerHockeyistId();
-            for (Hockeyist hockeyist : myFieldPlayers) {
-                long id = hockeyist.getId();
-                if (id == puckOwnerId) {
-                    decisions.add(new Decision(id, Decision.Role.ATTACK, defensePoint));
-                } else if (id == closestToDefend.getId()) {
-                    decisions.add(new Decision(id, Decision.Role.DEFENSE, defensePoint));
-                } else {
-                    decisions.add(new Decision(id, Decision.Role.MIDFIELD, Static.CENTER.shift(Players.defense.multiply(100))));
-                }
-            }
-            return;
-        }
-
         Hockeyist defender = closestToDefend;
 
+        long puckOwnerPlayerId = world.getPuck().getOwnerPlayerId();
         // If the defender is really close to the puck, he should run to it
         // TODO: do this even if the puck is owned by an enemy attacker, to tackle him
         if (puckOwnerPlayerId == -1 && findClosestGlobalPlayerToPuck(world) == closestToDefend) {
@@ -54,10 +38,24 @@ public class Team {
             }
         }
 
+        Hockeyist midfield = null;
+        Point positionForAttacker = determinePointForAttacker();
+        for (Hockeyist hockeyist : myFieldPlayers) {
+            if (hockeyist != defender &&
+                (midfield == null || positionForAttacker.distance(midfield) < positionForAttacker.distance(hockeyist))) {
+                midfield = hockeyist;
+            }
+        }
+
         // TODO: make decisions based on previous decisions to make transitions smooth
         for (Hockeyist hockeyist : myFieldPlayers) {
-            Decision.Role role = hockeyist == defender ? Decision.Role.DEFENSE : Decision.Role.ATTACK;
-            decisions.add(new Decision(hockeyist.getId(), role, defensePoint));
+            if (hockeyist == defender) {
+                decisions.add(new Decision(hockeyist.getId(), Decision.Role.DEFENSE, defensePoint));
+            } else if (hockeyist == midfield) {
+                decisions.add(new Decision(hockeyist.getId(), Decision.Role.MIDFIELD, Static.CENTER.shift(Players.defense.multiply(100))));
+            } else {
+                decisions.add(new Decision(hockeyist.getId(), Decision.Role.ATTACK, defensePoint));
+            }
         }
     }
 
@@ -106,6 +104,11 @@ public class Team {
     private static Point determineDefensePoint() {
         return Point.of(Players.me.getNetFront(), (Players.me.getNetTop() + Players.me.getNetBottom()) / 2)
                 .shift(Players.attack.multiply(Static.HOCKEYIST_RADIUS * 3.2));
+    }
+
+    @NotNull
+    public static Point determinePointForAttacker() {
+        return Static.CENTER.shift(Vec.of(0, /*TODO: Static.CENTER.y - puck.getY()*/200).plus(Players.attack.multiply(200)));
     }
 
     @NotNull
