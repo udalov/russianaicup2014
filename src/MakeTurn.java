@@ -28,7 +28,7 @@ public class MakeTurn {
 
     @NotNull
     public Result makeTurn() {
-        if (self.getRemainingKnockdownTicks() > 0) return new Result(Do.NONE, Go.go(0, 0));
+        if (self.getRemainingKnockdownTicks() > 0 || self.getState() == HockeyistState.RESTING) return new Result(Do.NONE, Go.go(0, 0));
 
         if (world.getMyPlayer().isJustScoredGoal() || world.getMyPlayer().isJustMissedGoal()) {
             if (self.getStamina() < 1000) {
