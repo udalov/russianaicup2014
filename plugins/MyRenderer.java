@@ -26,6 +26,7 @@ public class MyRenderer {
         renderGoaliePosition();
         // renderProbabilityToScore();
         // renderFuture();
+        renderLining();
     }
 
     public void renderAfter() {
@@ -114,6 +115,33 @@ public class MyRenderer {
             int r = (int) Static.PUCK_RADIUS;
             g.setColor(new Color(200, 200, 200));
             g.fillArc(x - r, y - r, 2 * r, 2 * r, 0, 360);
+        }
+        restore();
+    }
+
+    private void renderLining() {
+        Point c = Static.CENTER;
+
+        save();
+        g.setColor(new Color(200, 200, 200));
+        g.setStroke(new BasicStroke(2f));
+        drawLine(c.x, Const.rinkTop, c.x, Const.rinkBottom);
+        drawLine(Const.rinkLeft - Const.goalNetWidth, c.y, Const.rinkRight + Const.goalNetWidth, c.y);
+        restore();
+
+        save();
+        g.setColor(new Color(200, 200, 200));
+        for (int half = -1; half <= 1; half += 2) {
+            for (int line = 1; line <= 500; line += 100) {
+                double x = c.x + line * half;
+                drawLine(x, Const.rinkTop, x, Const.rinkBottom);
+            }
+        }
+        for (int half = -1; half <= 1; half += 2) {
+            for (int line = 100; line <= 400; line += 100) {
+                double y = c.y + line * half;
+               drawLine(Const.rinkLeft, y, Const.rinkRight, y);
+            }
         }
         restore();
     }
