@@ -1,4 +1,5 @@
 import model.Hockeyist;
+import model.HockeyistState;
 import model.HockeyistType;
 import model.World;
 
@@ -27,6 +28,7 @@ public class State {
         int myIndex = -1;
         int puckOwnerIndex = -1;
         for (Hockeyist hockeyist : world.getHockeyists()) {
+            if (hockeyist.getState() == HockeyistState.RESTING) continue;
             if (hockeyist.getId() == self.getId()) myIndex = positions.size();
             if (hockeyist.getId() == world.getPuck().getOwnerHockeyistId()) puckOwnerIndex = positions.size();
             positions.add(HockeyistPosition.of(hockeyist));

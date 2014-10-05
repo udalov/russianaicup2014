@@ -1,4 +1,5 @@
 import model.Hockeyist;
+import model.HockeyistState;
 import model.HockeyistType;
 import model.World;
 
@@ -78,6 +79,7 @@ public class Team {
         double bestTime = 0.0;
         Hockeyist bestPlayer = null;
         for (Hockeyist hockeyist : world.getHockeyists()) {
+            if (hockeyist.getType() == HockeyistType.GOALIE || hockeyist.getState() == HockeyistState.RESTING) continue;
             // TODO: take into account his speed direction, time to turn, etc.
             // s = v0*t + t^2/2
             // t = sqrt(v0^2 + 2*s) - v0
@@ -97,7 +99,7 @@ public class Team {
     private static List<Hockeyist> myFieldPlayers(@NotNull World world) {
         List<Hockeyist> result = new ArrayList<>(3);
         for (Hockeyist hockeyist : world.getHockeyists()) {
-            if (hockeyist.isTeammate() && hockeyist.getType() != HockeyistType.GOALIE) result.add(hockeyist);
+            if (hockeyist.isTeammate() && hockeyist.getType() != HockeyistType.GOALIE && hockeyist.getState() != HockeyistState.RESTING) result.add(hockeyist);
         }
         return result;
     }

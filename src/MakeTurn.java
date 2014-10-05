@@ -193,7 +193,7 @@ public class MakeTurn {
         if (self.getRemainingCooldownTicks() > 0) return null;
         Vec myDirection = Vec.direction(self);
         for (Hockeyist ally : world.getHockeyists()) {
-            if (!ally.isTeammate() || ally.getType() == HockeyistType.GOALIE || ally.getId() == self.getId()) continue;
+            if (!ally.isTeammate() || ally.getType() == HockeyistType.GOALIE || ally.getId() == self.getId() || ally.getState() == HockeyistState.RESTING) continue;
             HockeyistPosition allyPosition = HockeyistPosition.of(ally);
             Point point = Util.puckBindingPoint(allyPosition);
             double angle = self.getAngleTo(point.x, point.y);
@@ -209,7 +209,7 @@ public class MakeTurn {
     private boolean safeToSwingMore() {
         if (Util.speed(self) > 4) return false;
         for (Hockeyist enemy : world.getHockeyists()) {
-            if (enemy.isTeammate() || enemy.getType() == HockeyistType.GOALIE) continue;
+            if (enemy.isTeammate() || enemy.getType() == HockeyistType.GOALIE || enemy.getState() == HockeyistState.RESTING) continue;
             if (isReachable(enemy, puck) || isReachable(enemy, self)) return false;
         }
         return true;
@@ -330,7 +330,7 @@ public class MakeTurn {
     private Do tryHitNearbyEnemiesOrPuck() {
         if (self.getRemainingCooldownTicks() > 0) return Do.NONE;
         for (Hockeyist hockeyist : world.getHockeyists()) {
-            if (hockeyist.isTeammate() || hockeyist.getType() == HockeyistType.GOALIE) continue;
+            if (hockeyist.isTeammate() || hockeyist.getType() == HockeyistType.GOALIE || hockeyist.getState() == HockeyistState.RESTING) continue;
             if (isReachable(hockeyist)) return Do.STRIKE;
         }
         if (isReachable(puck)) {
