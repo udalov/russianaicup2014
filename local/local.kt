@@ -18,7 +18,7 @@ object KeyboardPlayer : Player("KeyboardPlayer", "#KeyboardPlayer")
 object EmptyPlayer : Player("EmptyPlayer", javaClass<com.a.b.a.a.e.a>().getSimpleName() + ".class")
 object QuickStartGuy : Player("QuickStartGuy", javaClass<com.a.b.a.a.e.b>().getSimpleName() + ".class")
 
-fun localRunner(vis: Boolean, ticks: Int, seed: Long, three: Boolean, players: List<Player>): Runnable {
+fun localRunner(vis: Boolean, ticks: Int, seed: Long, teamSize: Int, players: List<Player>): Runnable {
     Logger.getRootLogger()?.removeAllAppenders()
 
     val args = arrayListOf(
@@ -37,16 +37,16 @@ fun localRunner(vis: Boolean, ticks: Int, seed: Long, three: Boolean, players: L
     for ((index, player) in players.withIndices()) {
         val i = index + 1
         args.add("-p$i-name=${player.name}")
-        args.add("-p$i-team-size=${if (three) 3 else 2}")
+        args.add("-p$i-team-size=$teamSize")
         args.add(player.classFile)
     }
 
     return com.a.b.c(args.copyToArray())
 }
 
-fun runGame(vis: Boolean, ticks: Int, seed: Long, three: Boolean, players: List<Player>) {
+fun runGame(vis: Boolean, ticks: Int, seed: Long, teamSize: Int, players: List<Player>) {
     val threads = ArrayList<Thread>(2)
-    threads add Thread(localRunner(vis, ticks, seed, three, players))
+    threads add Thread(localRunner(vis, ticks, seed, teamSize, players))
 
     var nextPort = 31001L
     for (player in players) {
@@ -91,7 +91,7 @@ fun runMyStrategy(runnerClass: Class<*>, port: Long) {
 }
 
 /**
- * usage: ... player1 player2 ticks seed [-vis] [-3]
+ * usage: ... player1 player2 teamSize ticks seed [-vis]
  * players: empty, quick, keyboard, my, old
  */
 fun main(args: Array<String>) {
@@ -107,13 +107,14 @@ fun main(args: Array<String>) {
     }
     if (args.size < 3) error("nice try: ${Arrays.toString(args)}")
     val players = listOf(player(args[0]), player(args[1]))
-    val ticks = args[2].toInt()
-    var seed = args[3].toLong()
+    val teamSize = args[2].toInt()
+    val ticks = args[3].toInt()
+    var seed = args[4].toLong()
     if (seed == 0L) seed = Math.abs(Random().nextLong())
     val vis = "-vis" in args || KeyboardPlayer in players
     if (vis) println("SEED $seed")
 
-    runGame(vis, ticks, seed, "-3" in args, players)
+    runGame(vis, ticks, seed, teamSize, players)
 
     val log = File(LOG_FILE).readText()
     if (vis && !log.startsWith("OK")) println(log)

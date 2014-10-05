@@ -5,6 +5,7 @@ set -e
 ticks=50000
 team1=my
 team2=old
+team_size=3
 
 log=out/test-log.txt
 if [ -f $log ];
@@ -16,10 +17,10 @@ fi
 
 for seed in {100..149}
 do
-    java -jar dist/russianaicup.jar $team1 $team2 $ticks $seed -3 | sed "s/^/$seed /" | tee -a $log
+    java -jar dist/russianaicup.jar $team1 $team2 $team_size $ticks $seed | sed "s/^/$seed /" | tee -a $log
 done
 
 for seed in {150..199}
 do
-    java -jar dist/russianaicup.jar $team2 $team1 $ticks $seed -3 | sed "s/^/$seed /" | tee -a $log
+    java -jar dist/russianaicup.jar $team2 $team1 $team_size $ticks $seed | sed "s/^/$seed /" | tee -a $log
 done
