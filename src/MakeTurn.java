@@ -30,8 +30,24 @@ public class MakeTurn {
     public Result makeTurn() {
         if (self.getRemainingKnockdownTicks() > 0) return new Result(Do.NONE, Go.go(0, 0));
 
-        if (world.getMyPlayer().isJustScoredGoal()) return winningDance();
-        if (world.getMyPlayer().isJustMissedGoal()) return losingDance();
+        if (world.getMyPlayer().isJustScoredGoal() || world.getMyPlayer().isJustMissedGoal()) {
+            if (self.getStamina() < 1000) {
+                if (me.y < Const.rinkTop + Const.substitutionAreaHeight &&
+                    Vec.of(Static.CENTER, Players.myGoalCenter).innerProduct(Vec.of(Static.CENTER, me)) > 0) {
+                    Hockeyist best = null;
+                    for (Hockeyist ally : world.getHockeyists()) {
+                        if (!ally.isTeammate() || ally.getState() != HockeyistState.RESTING) continue;
+                        if (best == null || best.getStamina() < ally.getStamina()) {
+                            best = ally;
+                        }
+                    }
+                    assert best != null;
+                    return new Result(Do.substitute(best.getTeammateIndex()), Go.go(0, 0));
+                }
+                return new Result(Do.NONE, land(Point.of((Static.CENTER.x + Players.me.getNetFront()) / 2, 0)));
+            }
+            return new Result(Do.NONE, Go.go(0, 0));
+        }
 
         long puckOwnerId = puck.getOwnerHockeyistId();
 
@@ -170,27 +186,6 @@ public class MakeTurn {
             state = state.apply(Go.go(0, 0));
         }
         return /*probabilityToScore(state, 1) > 0.75 && */Evaluation.angleDifferenceToOptimal(state) < 3 * PI / 180;
-    }
-
-    @NotNull
-    private Result losingDance() {
-        Hockeyist closestEnemy = null;
-        double bestDistance = Double.MAX_VALUE;
-        for (Hockeyist hockeyist : world.getHockeyists()) {
-            if (hockeyist.isTeammate() || hockeyist.getType() == HockeyistType.GOALIE) continue;
-            double cur = self.getDistanceTo(hockeyist);
-            if (cur < bestDistance) {
-                bestDistance = cur;
-                closestEnemy = hockeyist;
-            }
-        }
-        if (closestEnemy == null) return new Result(Do.NONE, Go.go(0, Const.hockeyistTurnAngleFactor));
-        return new Result(isReachable(closestEnemy) ? Do.STRIKE : Do.NONE, Go.go(1, self.getAngleTo(closestEnemy)));
-    }
-
-    @NotNull
-    private static Result winningDance() {
-        return new Result(Do.NONE, Go.go(0, Const.hockeyistTurnAngleFactor));
     }
 
     @Nullable
