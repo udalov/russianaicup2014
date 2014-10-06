@@ -6,10 +6,6 @@ import model.World;
 public class MyStrategy implements Strategy {
     private static Team TEAM;
 
-    static {
-        new Debug();
-    }
-
     @Override
     public void move(@NotNull Hockeyist self, @NotNull World world, @NotNull Game game, @NotNull Move move) {
         if (TEAM == null) {
@@ -27,7 +23,5 @@ public class MyStrategy implements Strategy {
         move.setTeammateIndex(result.action.teammateIndex);
         move.setSpeedUp(result.direction.speedup);
         move.setTurn(result.direction.turn);
-
-        Debug.update(world);
     }
 }
