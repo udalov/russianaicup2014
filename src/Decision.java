@@ -1,12 +1,12 @@
 public class Decision {
     public final long id;
     public final Role role;
-    public final Point defensePoint;
+    public final Point dislocation;
 
-    public Decision(long id, @NotNull Role role, @NotNull Point defensePoint) {
+    public Decision(long id, @NotNull Role role, @NotNull Point dislocation) {
         this.id = id;
         this.role = role;
-        this.defensePoint = defensePoint;
+        this.dislocation = dislocation;
     }
 
     public enum Role {

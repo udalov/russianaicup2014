@@ -1,8 +1,11 @@
 import model.Hockeyist;
+import model.HockeyistState;
 import model.HockeyistType;
 import model.World;
 
 import java.awt.*;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Stack;
 
 import static java.lang.Math.*;
@@ -11,22 +14,28 @@ import static java.lang.Math.*;
 public class MyRenderer {
     private final Graphics2D g;
     private final World world;
+    private final MyMouseListener mouse;
+    private final MyKeyboardListener keyboard;
 
     private final Stack<Color> savedColors = new Stack<>();
     private final Stack<Stroke> savedStrokes = new Stack<>();
 
-    public MyRenderer(@NotNull Graphics2D g, @NotNull World world) {
+    public MyRenderer(@NotNull Graphics2D g, @NotNull World world, @NotNull MyMouseListener mouse, @NotNull MyKeyboardListener keyboard) {
         this.g = g;
         this.world = world;
+        this.mouse = mouse;
+        this.keyboard = keyboard;
     }
 
     public void renderBefore() {
-        renderPuckAndOwnerSpeed();
+        renderPuckSpeedAndGoaliePosition();
         renderPuckOwnerDirection();
-        renderGoaliePosition();
         // renderProbabilityToScore();
         // renderFuture();
         renderLining();
+        renderRolesAndInfo();
+        renderMouseCommandSegment();
+        renderKeyboardActionFlag();
     }
 
     public void renderAfter() {
@@ -34,12 +43,19 @@ public class MyRenderer {
 
     // -------------------------------------------------------------------------------------------------------------
 
-    private void renderPuckAndOwnerSpeed() {
+    private void renderPuckSpeedAndGoaliePosition() {
         g.drawString(String.format("puck speed %.3f", Util.speed(world.getPuck())), 220, 30);
 
         Hockeyist puckOwner = findPuckOwner();
         if (puckOwner != null) {
-            g.drawString(String.format("puck owner speed %.3f", Util.speed(puckOwner)), 220, 50);
+            g.drawString(String.format("puck owner speed %.3f", Util.speed(puckOwner)), 220, 48);
+        }
+
+        for (Hockeyist hockeyist : world.getHockeyists()) {
+            if (hockeyist.getType() == HockeyistType.GOALIE) {
+                g.drawString(String.format("goalie position %.3f", hockeyist.getY()), 220, 66);
+                return;
+            }
         }
     }
 
@@ -57,35 +73,27 @@ public class MyRenderer {
         restore();
     }
 
-    private void renderGoaliePosition() {
-        for (Hockeyist hockeyist : world.getHockeyists()) {
-            if (hockeyist.getType() == HockeyistType.GOALIE) {
-                g.drawString(String.format("goalie position %.3f", hockeyist.getY()), 220, 70);
-                return;
-            }
-        }
-    }
+    private static final Double PROBABILITY_TO_SCORE_THRESHOLD = null; // MakeTurn.ACCEPTABLE_PROBABILITY_TO_SCORE;
 
     private void renderProbabilityToScore() {
         Hockeyist puckOwner = findPuckOwner();
         if (puckOwner == null || puckOwner.getPlayerId() != Players.me.getId()) return;
 
-        State state = State.of(puckOwner, world);
-        int enemyGoalie = findEnemyGoalie(state);
-        HockeyistPosition gp = state.pos[enemyGoalie];
+        HockeyistPosition me = State.of(puckOwner, world).me();
+        double goalieX = Players.opponentGoalCenter.x - Static.HOCKEYIST_RADIUS;
 
         save();
         for (int x = (int) Static.CENTER.x + 2; x <= Const.rinkRight; x += 4) {
             for (int y = (int) Const.rinkTop + 2; y <= Const.rinkBottom; y += 4) {
                 Point puck = Point.of(x, y);
-                Vec direction = Vec.of(puck, findFarCorner(puck)).normalize();
-                Point me = puck.shift(direction.multiply(-Const.puckBindingRange));
-                State cur = new State(state.pos, new PuckPosition(state.puck.puck, puck, Vec.of(0, 0)), state.myIndex, state.puckOwnerIndex);
-                cur.pos[cur.myIndex] = new HockeyistPosition(state.pos[state.myIndex].hockeyist, me, state.me().velocity,
-                                                             Vec.direction(puckOwner).angle(), 0);
-                cur.pos[enemyGoalie] = new HockeyistPosition(state.pos[enemyGoalie].hockeyist, Point.of(gp.point.x, max(min(y, 530), 390)),
-                                                             gp.velocity, gp.angle, 0);
-                float p = (float) MakeTurn.probabilityToScore(cur, 1);
+                Vec direction = Vec.of(puck, Players.opponentDistantGoalPoint(puck)).normalize();
+                Point myLocation = puck.shift(direction.multiply(-Const.puckBindingRange));
+                HockeyistPosition attacker =
+                        new HockeyistPosition(me.hockeyist, myLocation, me.velocity, 0, direction.angle(), 0);
+                float p = (float) MakeTurn.probabilityToScore(1, Point.of(goalieX, max(min(y, 530), 390)), puck, attacker);
+                if (PROBABILITY_TO_SCORE_THRESHOLD != null) {
+                    p = p > PROBABILITY_TO_SCORE_THRESHOLD ? 1 : 0;
+                }
                 g.setColor(new Color(p, 0f, 1 - p));
                 g.fillRect(x - 2, y - 2, 5, 5);
             }
@@ -97,7 +105,7 @@ public class MyRenderer {
         Hockeyist puckOwner = findPuckOwner();
         State state = State.of(puckOwner != null ? puckOwner : world.getHockeyists()[0], world);
         for (int i = 0; i < 10; i++) {
-            state = state.apply(Go.go(0, 0));
+            state = state.apply(Go.NOWHERE);
         }
 
         save();
@@ -107,7 +115,7 @@ public class MyRenderer {
             int y = (int) round(position.point.y);
             int r = (int) Static.HOCKEYIST_RADIUS;
             g.drawArc(x - r, y - r, 2 * r, 2 * r, 0, 360);
-            drawLine(x, y, x + r * cos(position.angle), y + r * sin(position.angle));
+            drawLine(x, y, x + r * Util.fastCos(position.angle), y + r * Util.fastSin(position.angle));
         }
         {
             int x = (int) round(state.puck.point.x);
@@ -132,34 +140,56 @@ public class MyRenderer {
         save();
         g.setColor(new Color(200, 200, 200));
         for (int half = -1; half <= 1; half += 2) {
-            for (int line = 1; line <= 500; line += 100) {
+            for (int line = 0; line <= 500; line += 100) {
                 double x = c.x + line * half;
                 drawLine(x, Const.rinkTop, x, Const.rinkBottom);
             }
         }
         for (int half = -1; half <= 1; half += 2) {
-            for (int line = 100; line <= 400; line += 100) {
+            for (int line = 100; line <= 300; line += 100) {
                 double y = c.y + line * half;
-               drawLine(Const.rinkLeft, y, Const.rinkRight, y);
+                drawLine(Const.rinkLeft, y, Const.rinkRight, y);
             }
         }
         restore();
     }
 
-    private static int findEnemyGoalie(@NotNull State state) {
-        for (int i = 0; i < state.pos.length; i++) {
-            Hockeyist hockeyist = state.pos[i].hockeyist;
-            if (hockeyist.getType() == HockeyistType.GOALIE && hockeyist.getPlayerId() == Players.opponent.getId()) return i;
+    private void renderRolesAndInfo() {
+        Team team = MyStrategy.TEAM;
+
+        ArrayList<String> info = new ArrayList<>(3);
+        for (Hockeyist ally : world.getHockeyists()) {
+            if (ally.getType() == HockeyistType.GOALIE || ally.getState() == HockeyistState.RESTING) continue;
+            if (ally.getPlayerId() != Players.me.getId()) continue;
+            Decision decision = team.getDecision(ally.getId());
+            info.add((ally.getTeammateIndex() + 1) + " " + decision.role + " " + ally + "#" + MyStrategy.LAST_RESULT.get(ally.getId()));
         }
-        throw new AssertionError();
+        Collections.sort(info);
+
+        int y = 30;
+        for (String s : info) {
+            g.drawString(s.substring(0, s.indexOf('#')), 380, y);
+            y += 18;
+            g.drawString(s.substring(s.indexOf('#') + 1), 380, y);
+            y += 18;
+        }
     }
 
-    @NotNull
-    private static Point findFarCorner(@NotNull Point me) {
-        double y = me.y < Static.CENTER.y
-                   ? Const.goalNetTop + Const.goalNetHeight - Static.PUCK_RADIUS
-                   : Const.goalNetTop + Static.PUCK_RADIUS;
-        return Point.of(Const.rinkRight, y);
+    private void renderMouseCommandSegment() {
+        Point p = mouse.pressed;
+        if (p != null) {
+            Point q = mouse.current;
+            drawLine(p.x, p.y, q.x, q.y);
+        }
+    }
+
+    private void renderKeyboardActionFlag() {
+        if (keyboard.isActionPressed) {
+            save();
+            g.setColor(new Color(100, 0, 0));
+            g.drawString("ACTION", 24, 100);
+            restore();
+        }
     }
 
     @Nullable

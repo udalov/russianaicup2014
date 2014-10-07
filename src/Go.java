@@ -1,4 +1,6 @@
 public class Go {
+    public static final Go NOWHERE = new Go(0, 0);
+
     public final double speedup;
     public final double turn;
 

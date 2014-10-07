@@ -2,12 +2,31 @@ import model.Hockeyist;
 import model.Unit;
 import model.World;
 
-import static java.lang.StrictMath.PI;
-import static java.lang.StrictMath.hypot;
+import static java.lang.StrictMath.*;
 
 public class Util {
+    private static final double HALF_PI = PI / 2;
+
+    @SuppressWarnings("MagicNumber")
+    public static double fastSin(double x) {
+        x /= HALF_PI;
+        if (x > 0.999999999) x = 2 - x;
+        else if (x < -0.999999999) x = -2 - x;
+        double x2 = x * x;
+        return ((((.00015148419 * x2 - .00467376557) * x2 + .07968967928) * x2 - .64596371106) * x2 + 1.57079631847) * x;
+    }
+
+    public static double fastCos(double x) {
+        return fastSin(HALF_PI - x);
+    }
+
     public static double sqr(double x) {
         return x * x;
+    }
+
+    public static double hypot(double a, double b) {
+        // Surprisingly, hypot is much slower than the naive method
+        return sqrt(a * a + b * b);
     }
 
     public static double normalize(double angle) {
@@ -34,6 +53,14 @@ public class Util {
     }
 
     public static double effectiveAttribute(@NotNull Hockeyist hockeyist, double attribute) {
-        return (0.75 + 0.25 * hockeyist.getStamina() / 2000) * attribute / 100;
+        double d = Const.zeroStaminaHockeyistEffectivenessFactor;
+        return (d + (1 - d) * hockeyist.getStamina() / Const.hockeyistMaxStamina) * attribute / 100;
+    }
+
+    public static double takeFreePuckProbability(@NotNull HockeyistPosition hockeyist, @NotNull PuckPosition puck) {
+        Hockeyist h = hockeyist.hockeyist;
+        return Const.pickUpPuckBaseChance +
+               max(effectiveAttribute(h, h.getDexterity()), effectiveAttribute(h, h.getAgility())) -
+               puck.velocity.length() / 20;
     }
 }

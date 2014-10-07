@@ -16,8 +16,8 @@ public class PuckPosition extends Position {
 
     @NotNull
     public PuckPosition move() {
-        Vec velocity = this.velocity.multiply(0.999);
-        return new PuckPosition(puck, point.shift(velocity), velocity);
+        Vec newVelocity = velocity.multiply(0.999);
+        return new PuckPosition(puck, point.shift(newVelocity), newVelocity);
     }
 
     @NotNull

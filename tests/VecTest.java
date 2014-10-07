@@ -1,4 +1,3 @@
-import junit.framework.ComparisonFailure;
 import junit.framework.TestCase;
 
 import static java.lang.StrictMath.PI;
@@ -49,10 +48,6 @@ public class VecTest extends TestCase {
     }
 
     private static void assertEq(double expected, double actual) {
-        if (abs(expected - actual) > 1e-9) {
-            String e = String.format("%.9f", expected);
-            String a = String.format("%.9f", actual);
-            throw new ComparisonFailure("expected " + e + ", actual " + a, e, a);
-        }
+        TestUtil.assertEq(expected, actual, 1e-9);
     }
 }

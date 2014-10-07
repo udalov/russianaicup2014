@@ -177,6 +177,6 @@ public class Hockeyist extends Unit {
         if (getRemainingKnockdownTicks() > 0) result += " (" + getRemainingKnockdownTicks() + " knockdown)";
         if (getRemainingCooldownTicks() > 0) result += " (" + getRemainingCooldownTicks() + " cooldown)";
         if (getSwingTicks() > 0) result += " (" + getSwingTicks() + " swing)";
-        return result + " at " + String.format("(%.3f, %.3f)", getX(), getY());
+        return String.format("%s at (%.3f, %.3f) speed %.3f", result, getX(), getY(), Math.hypot(getSpeedX(), getSpeedY()));
     }
 }

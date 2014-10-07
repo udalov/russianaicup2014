@@ -1,8 +1,11 @@
 import model.Hockeyist;
+import model.HockeyistState;
 import model.HockeyistType;
 import model.World;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 public class Team {
@@ -10,6 +13,8 @@ public class Team {
     private final List<Decision> decisions = new ArrayList<>(3);
 
     public int lastGoalTick;
+
+    private static final Decision.Role[] ROLES = {Decision.Role.DEFENSE, Decision.Role.ATTACK, Decision.Role.MIDFIELD};
 
     public void solveTick(@NotNull World world) {
         if (currentTick == world.getTick()) return;
@@ -20,94 +25,70 @@ public class Team {
             lastGoalTick = currentTick;
         }
 
-        List<Hockeyist> myFieldPlayers = myFieldPlayers(world);
-        Point defensePoint = determineDefensePoint();
-
-        Hockeyist closestToDefend = findClosestToPoint(myFieldPlayers, defensePoint);
-        Hockeyist defender = closestToDefend;
-
-        long puckOwnerPlayerId = world.getPuck().getOwnerPlayerId();
-        // If the defender is really close to the puck, he should run to it
-        if (puckOwnerPlayerId != Players.me.getId() && findClosestGlobalPlayerToPuck(world) == closestToDefend) {
-            // TODO: unhardcode
-            if (closestToDefend.getDistanceTo(world.getPuck()) < 500) {
-                List<Hockeyist> possibleDefenders = new ArrayList<>(myFieldPlayers);
-                possibleDefenders.remove(closestToDefend);
-                defender = findClosestToPoint(possibleDefenders, defensePoint);
-            }
-        }
-
-        Hockeyist midfield = null;
-        Point positionForAttacker = determinePointForAttacker();
-        for (Hockeyist hockeyist : myFieldPlayers) {
-            if (hockeyist != defender &&
-                (midfield == null || positionForAttacker.distance(midfield) < positionForAttacker.distance(hockeyist))) {
-                midfield = hockeyist;
-            }
-        }
-
-        // TODO: make decisions based on previous decisions to make transitions smooth
-        for (Hockeyist hockeyist : myFieldPlayers) {
-            if (hockeyist == defender) {
-                decisions.add(new Decision(hockeyist.getId(), Decision.Role.DEFENSE, defensePoint));
-            } else if (hockeyist == midfield) {
-                decisions.add(new Decision(hockeyist.getId(), Decision.Role.MIDFIELD, Static.CENTER.shift(Players.defense.multiply(100))));
-            } else {
-                decisions.add(new Decision(hockeyist.getId(), Decision.Role.ATTACK, defensePoint));
-            }
-        }
-    }
-
-    @NotNull
-    private static Hockeyist findClosestToPoint(@NotNull List<Hockeyist> players, @NotNull Point point) {
-        Hockeyist closest = null;
-        for (Hockeyist hockeyist : players) {
-            if (closest == null || point.distance(hockeyist) < point.distance(closest)) {
-                closest = hockeyist;
-            }
-        }
-        assert closest != null : "No field players: " + players;
-        return closest;
-    }
-
-    @NotNull
-    private static Hockeyist findClosestGlobalPlayerToPuck(@NotNull World world) {
-        double bestTime = 0.0;
-        Hockeyist bestPlayer = null;
+        List<Hockeyist> candidates = new ArrayList<>(3);
         for (Hockeyist hockeyist : world.getHockeyists()) {
-            // TODO: take into account his speed direction, time to turn, etc.
-            // s = v0*t + t^2/2
-            // t = sqrt(v0^2 + 2*s) - v0
-            double s = hockeyist.getDistanceTo(world.getPuck());
-            double v0 = Util.speed(hockeyist);
-            double t = Math.sqrt(v0*v0 + 2*s) - v0;
-            if (bestPlayer == null || t < bestTime) {
-                bestTime = t;
-                bestPlayer = hockeyist;
+            if (hockeyist.getPlayerId() != Players.me.getId() || hockeyist.getType() == HockeyistType.GOALIE) continue;
+            if (hockeyist.getState() == HockeyistState.RESTING) continue;
+            candidates.add(hockeyist);
+        }
+
+        Collections.sort(candidates, new Comparator<Hockeyist>() {
+            @Override
+            public int compare(@NotNull Hockeyist o1, @NotNull Hockeyist o2) {
+                return Integer.compare(o1.getOriginalPositionIndex(), o2.getOriginalPositionIndex());
+            }
+        });
+
+        int n = candidates.size();
+        double best = Double.MAX_VALUE;
+        Point[] bestFormation = null;
+        int[] bestPermutation = null;
+        for (Point[] formation : formations()) {
+            for (int[] permutation : permutations(n)) {
+                double cur = 0;
+                for (int i = 0; i < n; i++) {
+                    cur += Util.sqr(formation[i].distance(candidates.get(permutation[i])));
+                }
+                if (cur < best) {
+                    best = cur;
+                    bestFormation = formation;
+                    bestPermutation = permutation;
+                }
             }
         }
-        assert bestPlayer != null : "No field players: " + world;
-        return bestPlayer;
-    }
-
-    @NotNull
-    private static List<Hockeyist> myFieldPlayers(@NotNull World world) {
-        List<Hockeyist> result = new ArrayList<>(3);
-        for (Hockeyist hockeyist : world.getHockeyists()) {
-            if (hockeyist.isTeammate() && hockeyist.getType() != HockeyistType.GOALIE) result.add(hockeyist);
+        assert bestFormation != null && bestPermutation != null;
+        for (int i = 0; i < n; i++) {
+            Hockeyist candidate = candidates.get(bestPermutation[i]);
+            decisions.add(new Decision(candidate.getId(), ROLES[i], bestFormation[i]));
         }
-        return result;
     }
 
-    @NotNull
-    private static Point determineDefensePoint() {
-        return Point.of(Players.me.getNetFront(), (Players.me.getNetTop() + Players.me.getNetBottom()) / 2)
-                .shift(Players.attack.multiply(Static.HOCKEYIST_RADIUS * 3.2));
-    }
+    private static final int[][] PERMUTATIONS_2 = {{0, 1}, {1, 0}};
+    private static final int[][] PERMUTATIONS_3 = {{0, 1, 2}, {0, 2, 1}, {1, 0, 2}, {1, 2, 0}, {2, 0, 1}, {2, 1, 0}};
 
     @NotNull
-    public static Point determinePointForAttacker() {
-        return Static.CENTER.shift(Vec.of(0, /*TODO: Static.CENTER.y - puck.getY()*/200).plus(Players.attack.multiply(200)));
+    private static int[][] permutations(int n) {
+        return n == 2 ? PERMUTATIONS_2 : PERMUTATIONS_3;
+    }
+
+    // Defense, attack, midfield
+    // TODO: cache
+    @NotNull
+    public static Point[][] formations() {
+        Vec attack = Players.attack;
+        Point defensePoint = Point.of(Players.me.getNetFront(), Static.CENTER.y).shift(attack.multiply(Static.HOCKEYIST_RADIUS * 3.2));
+        return new Point[][]{
+                {
+                        defensePoint,
+                        Static.CENTER.shift(Vec.of(0, -200).plus(attack.multiply(200))),
+                        Static.CENTER.shift(Vec.of(0, 200).plus(attack.multiply(-100)))
+                },
+                {
+                        defensePoint,
+                        Static.CENTER.shift(Vec.of(0, 200).plus(attack.multiply(200))),
+                        Static.CENTER.shift(Vec.of(0, -200).plus(attack.multiply(-100)))
+                },
+        };
     }
 
     @NotNull

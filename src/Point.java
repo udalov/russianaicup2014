@@ -1,7 +1,5 @@
 import model.Unit;
 
-import static java.lang.StrictMath.sqrt;
-
 public class Point {
     public static final Point ZERO = Point.of(0, 0);
 
@@ -29,7 +27,7 @@ public class Point {
     }
 
     public double distance(double x0, double y0) {
-        return sqrt((x - x0) * (x - x0) + (y - y0) * (y - y0));
+        return Util.hypot(x - x0, y - y0);
     }
 
     public double distance(@NotNull Point other) {

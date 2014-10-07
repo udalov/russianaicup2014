@@ -1,6 +1,4 @@
-import static java.lang.Math.abs;
-import static java.lang.StrictMath.cos;
-import static java.lang.StrictMath.sin;
+import static java.lang.StrictMath.abs;
 
 public class Line {
     // Ax + By = C
@@ -24,7 +22,7 @@ public class Line {
 
     @NotNull
     public static Line of(double angle) {
-        return new Line(-sin(angle), cos(angle), 0);
+        return new Line(-Util.fastSin(angle), Util.fastCos(angle), 0);
     }
 
     public boolean contains(@NotNull Point p) {

@@ -1,5 +1,3 @@
-import model.Unit;
-
 public abstract class Position {
     public final Point point;
     public final Vec velocity;
@@ -15,9 +13,5 @@ public abstract class Position {
 
     public double distance(@NotNull Position other) {
         return point.distance(other.point);
-    }
-
-    public double distance(@NotNull Unit other) {
-        return point.distance(other);
     }
 }

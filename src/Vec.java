@@ -1,8 +1,14 @@
 import model.Unit;
 
-import static java.lang.StrictMath.*;
+import static java.lang.StrictMath.abs;
+import static java.lang.StrictMath.atan2;
 
 public class Vec {
+    public static final Vec ZERO = Vec.of(0, 0);
+
+    public static final Vec UP = Vec.of(0, -1);
+    public static final Vec DOWN = Vec.of(0, 1);
+
     public final double x;
     public final double y;
 
@@ -28,7 +34,7 @@ public class Vec {
 
     @NotNull
     public static Vec of(double angle) {
-        return new Vec(cos(angle), sin(angle));
+        return new Vec(Util.fastCos(angle), Util.fastSin(angle));
     }
 
     @NotNull
@@ -62,7 +68,7 @@ public class Vec {
     }
 
     public double length() {
-        return hypot(x, y);
+        return Util.hypot(x, y);
     }
 
     @NotNull
