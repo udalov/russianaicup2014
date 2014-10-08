@@ -90,7 +90,7 @@ public class MyRenderer {
                 Point myLocation = puck.shift(direction.multiply(-Const.puckBindingRange));
                 HockeyistPosition attacker =
                         new HockeyistPosition(me.hockeyist, myLocation, me.velocity, 0, direction.angle(), 0);
-                float p = (float) MakeTurn.probabilityToScore(1, Point.of(goalieX, max(min(y, 530), 390)), puck, attacker);
+                float p = (float) MakeTurn.probabilityToScore(me.strength(), Point.of(goalieX, max(min(y, 530), 390)), puck, attacker);
                 if (PROBABILITY_TO_SCORE_THRESHOLD != null) {
                     p = p > PROBABILITY_TO_SCORE_THRESHOLD ? 1 : 0;
                 }

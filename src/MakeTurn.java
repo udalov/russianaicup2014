@@ -16,7 +16,6 @@ public class MakeTurn {
     public static final double GOAL_POINT_SHIFT = 3; // TODO: revise
     public static final double TAKE_FREE_PUCK_MINIMUM_PROBABILITY = 0.8;
     public static final double ACCEPTABLE_PROBABILITY_TO_SCORE = 0.8;
-    public static final double MAXIMUM_DISTANCE_TO_DISTANT_GOAL_POINT_FOR_PASS = 350;
 
     public static final boolean DEBUG_DO_NOTHING_UNTIL_ENEMY_MIDFIELD_MOVES = false;
 
@@ -140,7 +139,8 @@ public class MakeTurn {
                 State state = current;
                 for (int i = 0; i < 60 && i < bestTick; i++) {
                     state = state.moveAllNoCollisions(i < ticks ? go : Go.NOWHERE, Go.NOWHERE);
-                    if (permissionToShoot(max(i - ticks, 0), state) || canScoreWithPass(state)) {
+                    int couldBeSwinging = i - ticks >= 10 ? i - ticks : 0;
+                    if (permissionToShoot(couldBeSwinging, state) || canScoreWithPass(state)) {
                         best = go;
                         bestTick = i;
                         break;
@@ -258,7 +258,7 @@ public class MakeTurn {
         if (puckOwner == null) {
             Result wait;
             // TODO: not puck binding point, but intersection of puck trajectory and our direction
-            if (role == Decision.Role.ATTACK && feasibleLocationToShoot(1, null, Util.puckBindingPoint(me), me)) {
+            if (role == Decision.Role.ATTACK && feasibleLocationToShoot(me.strength(), null, Util.puckBindingPoint(me), me)) {
                 wait = waitForPuckToCome(Vec.of(me.point, Players.opponentDistantGoalPoint(me.point)).angle(), true);
             } else {
                 wait = waitForPuckToCome(me.angle, false);
@@ -359,14 +359,12 @@ public class MakeTurn {
         return abs(state.me().angleTo(trajectory));
     }
 
-    // TODO: (!) verify
+    // TODO: (!) verify that it works as expected
     private static boolean canScoreWithPass(@NotNull State state) {
-        if (!feasibleLocationToShoot(maximumEffectivePassPower(state.me()), state.enemyGoalie(), state.puck.point, state.me())) {
-            return false;
-        }
-        Point target = Players.opponentDistantGoalPoint(state.me().point);
-        return state.me().distance(target) <= MAXIMUM_DISTANCE_TO_DISTANT_GOAL_POINT_FOR_PASS &&
-               abs(Vec.of(state.puck.point, target).angleTo(state.me().direction())) < Const.passSector / 2;
+        HockeyistPosition me = state.me();
+        if (!feasibleLocationToShoot(maximumEffectivePassPower(me), state.enemyGoalie(), state.puck.point, me)) return false;
+        Point target = Players.opponentDistantGoalPoint(me.point);
+        return abs(Vec.of(state.puck.point, target).angleTo(me.direction())) < Const.passSector / 2;
     }
 
     private static double effectiveShotPower(int swingTicks, @NotNull HockeyistPosition me) {
@@ -469,7 +467,7 @@ public class MakeTurn {
         if (defendingGoalie == null) defendingGoalie = goalieNearby;
         Point goalieDistant = Players.opponentDistantCorner(puck).shift(verticalMovement.multiply(-Static.HOCKEYIST_RADIUS)).shift(goalieHorizontalShift);
 
-        double puckSpeed = Const.struckPuckInitialSpeedFactor * strikePower * attacker.strength() + attacker.velocity.projection(attacker.direction());
+        double puckSpeed = Const.struckPuckInitialSpeedFactor * strikePower + attacker.velocity.projection(attacker.direction());
 
         Vec trajectory = Vec.of(puck, target);
         boolean withinGoalieReach = min(goalieNearby.y, goalieDistant.y) <= puck.y && puck.y <= max(goalieNearby.y, goalieDistant.y);
