@@ -76,6 +76,10 @@ public class MakeTurn {
             return new Result(strikeOrCancelOrContinueSwinging(), Go.NOWHERE);
         }
 
+        // If not swinging, maybe we have the puck and are ready to shoot or the puck is just flying by at the moment
+        Do shoot = maybeShoot();
+        if (shoot != null) return new Result(shoot, Go.NOWHERE);
+
         // If we have the puck, swing/shoot/pass or just go to the attack point
         if (puckOwner != null && puckOwner.id() == me.id()) {
             return withPuck(decision.role);
@@ -103,7 +107,7 @@ public class MakeTurn {
             case MIDFIELD:
                 Result passMidfieldToAttacker = maybePassToAttacker();
                 if (passMidfieldToAttacker != null) return passMidfieldToAttacker;
-                return goForwardMaybeShoot();
+                return goForwardToShootingPosition();
             case ATTACK:
                 // TODO
                 HockeyistPosition defender = findAlly(Decision.Role.DEFENSE);
@@ -113,7 +117,7 @@ public class MakeTurn {
                         if (passAttackerToDefender != null) return passAttackerToDefender;
                     }
                 }
-                return goForwardMaybeShoot();
+                return goForwardToShootingPosition();
             case DEFENSE:
                 // TODO
                 Result passDefenderToAttacker = maybePassToAttacker();
@@ -123,57 +127,59 @@ public class MakeTurn {
                     Result passDefenderToMidfield = makePassMaybeTurnBefore(Util.puckBindingPoint(midfield));
                     if (passDefenderToMidfield != null) return passDefenderToMidfield;
                 }
-                return goForwardMaybeShoot();
+                return goForwardToShootingPosition();
         }
         throw new AssertionError(role);
     }
 
     @NotNull
-    private Result goForwardMaybeShoot() {
-        Do shoot = maybeShoot();
-        if (shoot != null) return new Result(shoot, Go.NOWHERE);
+    private Result goForwardToShootingPosition() {
+        for (Go go : iteratePossibleMoves(16)) {
+            State state = current.moveAllNoCollisions(go, Go.NOWHERE);
+            if (permissionToShoot(0, state) || canScoreWithPass(state)) {
+                return new Result(Do.NONE, go);
+            }
+        }
 
+        // TODO: (!) improve this heuristic
         Go best = null;
         int bestTick = Integer.MAX_VALUE;
-        for (int ticks = 10; ticks <= 40; ticks += 10) {
-            for (Go go : iteratePossibleMoves(4)) {
-                State state = current;
-                for (int i = 0; i < 60 && i < bestTick; i++) {
-                    state = state.moveAllNoCollisions(i < ticks ? go : Go.NOWHERE, Go.NOWHERE);
-                    int couldBeSwinging = i - ticks >= 10 ? i - ticks : 0;
-                    if (permissionToShoot(couldBeSwinging, state) || canScoreWithPass(state)) {
-                        best = go;
+        firstMove: for (Go firstMove : iteratePossibleMoves(4)) {
+            State state = current;
+            for (int i = 0; i < 20 && i < bestTick - 3; i++) {
+                state = state.moveAllNoCollisions(firstMove, Go.NOWHERE);
+                if (permissionToShoot(0, state) || canScoreWithPass(state)) {
+                    best = firstMove;
+                    bestTick = i;
+                    continue firstMove;
+                }
+            }
+            if (abs(firstMove.speedup) < 1e-9) continue;
+            secondMove: for (Go secondMove : iteratePossibleMoves(2)) {
+                if (firstMove.speedup > secondMove.speedup || (firstMove.speedup == secondMove.speedup && firstMove.turn > secondMove.turn)) break;
+                State next = state;
+                for (int i = 20; i < 40 && i < bestTick - 3; i++) {
+                    next = next.moveAllNoCollisions(secondMove, Go.NOWHERE);
+                    if (permissionToShoot(0, next) || canScoreWithPass(next)) {
+                        best = firstMove;
                         bestTick = i;
-                        break;
+                        continue secondMove;
+                    }
+                }
+                for (int i = 40; i < 65 && i < bestTick - 3; i++) {
+                    next = next.moveAllNoCollisions(Go.NOWHERE, Go.NOWHERE);
+                    if (permissionToShoot(i - 40 >= 10 ? i - 40 : 0, next) || canScoreWithPass(next)) {
+                        best = firstMove;
+                        bestTick = i;
+                        continue secondMove;
                     }
                 }
             }
         }
+
         if (best != null) {
             return new Result(Do.NONE, best);
         }
-
-/*
-        double bestProbability = 0;
-        for (int ticks = 10; ticks <= 40; ticks += 10) {
-            for (Go go : iteratePossibleMoves(4)) {
-                State state = current;
-                for (int i = 0; i < 60; i++) {
-                    state = state.moveAllNoCollisions(i < ticks ? go : Go.NOWHERE);
-                    double strikePower = effectiveShotPower(0, state.me());
-                    double cur = probabilityToScore(strikePower, state.enemyGoalie(), state.puck.point, state.me());
-                    if (cur > bestProbability) {
-                        bestProbability = cur;
-                        best = go;
-                        break;
-                    }
-                }
-            }
-        }
-        if (best != null) return new Result(Do.NONE, best);
-
-        // At this point, no matter where we go, there's 0 probability to score in a few ticks
-*/
 
         // TODO: (!) improve
         // TODO: (!) check which trajectory is safest
@@ -186,6 +192,7 @@ public class MakeTurn {
 
     @Nullable
     private Do maybeShoot() {
+        if (!isReachable(me, puck)) return null;
         if (canScoreWithPass(current)) {
             Point target = Players.opponentDistantGoalPoint(puck.point);
             double correctAngle = Vec.of(puck.point, target).angleTo(me.direction());
@@ -270,8 +277,9 @@ public class MakeTurn {
         }
 
         // TODO: defender should not come out very early because the enemy can dribble him
+        // TODO (?): if (role == Decision.Role.DEFENSE) return null;
 
-        if (isReachable(me, current.puck) || isReachable(me, puckOwner)) {
+        if (isReachable(me, puck) || isReachable(me, puckOwner)) {
             return new Result(Do.STRIKE, goToPuck());
         }
 
@@ -402,6 +410,13 @@ public class MakeTurn {
     @NotNull
     private Go goToPuck() {
         // TODO: (!) improve this heuristic
+
+        // If the puck is owned by someone, simulate the world as if the owner is bound to the puck which moves freely
+        // (v + |v|*x) * 0.98 = v
+        // 0.98v + 0.98|v|x = v
+        // x = 0.02/0.98
+        Go puckOwnerDirection = current.puckOwner() != null ? Go.go(0.02 / 0.98, 0) : Go.NOWHERE;
+
         Go bestGo = null;
         int bestFirstTickToReach = Integer.MAX_VALUE;
         double bestDistance = Double.MAX_VALUE;
@@ -409,7 +424,7 @@ public class MakeTurn {
             for (Go go : iteratePossibleMoves(4)) {
                 State state = current;
                 for (int i = 0; i < 60 && i < bestFirstTickToReach; i++) {
-                    state = state.moveAllNoCollisions(i < ticks ? go : Go.NOWHERE, Go.NOWHERE);
+                    state = state.moveAllNoCollisions(i < ticks ? go : Go.NOWHERE, puckOwnerDirection);
                     if (isReachable(state.me(), state.puck)) {
                         bestFirstTickToReach = i;
                         bestGo = go;
