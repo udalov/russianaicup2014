@@ -24,7 +24,7 @@ fun localRunner(vis: Boolean, ticks: Int, seed: Long, teamSize: Int, players: Li
     val args = arrayListOf(
             "-tick-count=$ticks",
             "-render-to-screen=$vis",
-            "-render-to-screen-scale=0.8",
+            "-render-to-screen-scale=${if ("Windows" in System.getProperty("os.name")!!) 1.0 else 0.8}",
             "-render-to-screen-sync=true",
             "-results-file=$LOG_FILE",
             "-debug=true",
