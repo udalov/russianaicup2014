@@ -1,7 +1,11 @@
+import model.Hockeyist;
+import model.HockeyistType;
 import model.Player;
 import model.World;
 
 public class Players {
+    public static int teamSize;
+
     public static Player me;
     public static Player opponent;
 
@@ -17,6 +21,13 @@ public class Players {
     public static Point opponentTopGoalPoint;
 
     public static void initialize(@NotNull World world) {
+        Hockeyist[] hockeyists = world.getHockeyists();
+        teamSize = 2;
+        for (Hockeyist hockeyist : hockeyists) {
+            if (hockeyist.getType() == HockeyistType.FORWARD) teamSize = 3;
+            else if (hockeyist.getType() == HockeyistType.RANDOM) teamSize = 6;
+        }
+
         me = world.getMyPlayer();
         opponent = world.getOpponentPlayer();
 
