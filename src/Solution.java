@@ -227,7 +227,7 @@ public class Solution {
         if (attacker == null) return null;
         Vec desirableDirection = Vec.of(attacker.point, Players.opponentDistantGoalPoint(attacker.point)).normalize();
         Point location = attacker.point.shift(desirableDirection.multiply(Const.puckBindingRange));
-        if (feasibleLocationToShoot(1, null, Util.puckBindingPoint(attacker), attacker)) {
+        if (feasibleLocationToShoot(1, attacker.direction(), null, Util.puckBindingPoint(attacker), attacker)) {
             Result pass = makePassMaybeTurnBefore(location);
             if (pass != null) return pass;
         }
@@ -269,7 +269,8 @@ public class Solution {
         if (puckOwner == null) {
             Result wait;
             // TODO: not puck binding point, but intersection of puck trajectory and our direction
-            if (decision.role == Decision.Role.ATTACK && feasibleLocationToShoot(me.strength(), null, Util.puckBindingPoint(me), me)) {
+            if (decision.role == Decision.Role.ATTACK &&
+                feasibleLocationToShoot(me.strength(), me.direction(), null, Util.puckBindingPoint(me), me)) {
                 wait = waitForPuckToCome(Vec.of(me.point, Players.opponentDistantGoalPoint(me.point)).angle(), true);
             } else {
                 wait = waitForPuckToCome(me.angle, false);
@@ -360,8 +361,9 @@ public class Solution {
     }
 
     private static boolean permissionToShoot(int swingTicks, @NotNull State state) {
-        double strikePower = effectiveShotPower(swingTicks, state.me());
-        return feasibleLocationToShoot(strikePower, state.enemyGoalie(), state.puck.point, state.me()) &&
+        HockeyistPosition me = state.me();
+        double strikePower = effectiveShotPower(swingTicks, me);
+        return feasibleLocationToShoot(strikePower, me.direction(), state.enemyGoalie(), state.puck.point, me) &&
                angleDifferenceToOptimal(state) <= ALLOWED_ANGLE_DIFFERENCE_TO_SHOOT;
     }
 
@@ -373,12 +375,13 @@ public class Solution {
         return abs(state.me().angleTo(trajectory));
     }
 
-    // TODO: (!) verify that it works as expected
     private static boolean canScoreWithPass(@NotNull State state) {
         HockeyistPosition me = state.me();
-        if (!feasibleLocationToShoot(maximumEffectivePassPower(me), state.enemyGoalie(), state.puck.point, me)) return false;
         Point target = Players.opponentDistantGoalPoint(me.point);
-        return abs(Vec.of(state.puck.point, target).angleTo(me.direction())) < Const.passSector / 2;
+        double passAngle = Vec.of(state.puck.point, target).angleTo(me.direction());
+        if (abs(passAngle) >= Const.passSector / 2) return false;
+        Vec strikeDirection = Vec.of(me.angle + passAngle);
+        return feasibleLocationToShoot(maximumEffectivePassPower(me), strikeDirection, state.enemyGoalie(), state.puck.point, me);
     }
 
     private static double effectiveShotPower(int swingTicks, @NotNull HockeyistPosition me) {
@@ -391,11 +394,12 @@ public class Solution {
 
     public static boolean feasibleLocationToShoot(
             double strikePower,
+            @NotNull Vec strikeDirection,
             @Nullable Point defendingGoalie,
             @NotNull Point puck,
             @NotNull HockeyistPosition attacker
     ) {
-        return probabilityToScore(strikePower, defendingGoalie, puck, attacker) > ACCEPTABLE_PROBABILITY_TO_SCORE;
+        return probabilityToScore(strikePower, strikeDirection, defendingGoalie, puck, attacker) > ACCEPTABLE_PROBABILITY_TO_SCORE;
     }
 
     @NotNull
@@ -465,6 +469,7 @@ public class Solution {
     // TODO: optimize
     public static double probabilityToScore(
             double strikePower,
+            @NotNull Vec strikeDirection, // can be different from attacker.direction() only in case of a pass
             @Nullable Point defendingGoalie, // null means just take the nearby corner position
             @NotNull Point puck,
             @NotNull HockeyistPosition attacker
@@ -479,11 +484,11 @@ public class Solution {
         if (defendingGoalie == null) defendingGoalie = goalieNearby;
         Point goalieDistant = Players.opponentDistantCorner(puck).shift(verticalMovement.multiply(-Static.HOCKEYIST_RADIUS)).shift(goalieHorizontalShift);
 
-        double puckSpeed = Const.struckPuckInitialSpeedFactor * strikePower + attacker.velocity.projection(attacker.direction());
+        double puckSpeed = Const.struckPuckInitialSpeedFactor * strikePower + attacker.velocity.projection(strikeDirection);
 
         Vec trajectory = Vec.of(puck, target);
         boolean withinGoalieReach = min(goalieNearby.y, goalieDistant.y) <= puck.y && puck.y <= max(goalieNearby.y, goalieDistant.y);
-        double puckStartY = (withinGoalieReach ? puck.y : goalieNearby.y)/* TODO: - puckSpeed * sin(trajectory.angleTo(verticalMovement))*/;
+        double puckStartY = (withinGoalieReach ? puck.y : goalieNearby.y) - puckSpeed * sin(trajectory.angleTo(verticalMovement));
         Line line = Line.between(puck, target);
         Point puckStart = line.when(puckStartY);
 
@@ -545,5 +550,10 @@ public class Solution {
         }
 
         return new Result(Do.NONE, goTo(target));
+    }
+
+    @Override
+    public String toString() {
+        return String.format("tick %d puck %s %s", world.getTick(), puck, me);
     }
 }
