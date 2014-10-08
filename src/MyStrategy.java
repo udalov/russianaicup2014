@@ -23,9 +23,9 @@ public class MyStrategy implements Strategy {
         if (self.getState() == HockeyistState.RESTING) return;
 
         //noinspection PointlessBooleanExpression,ConstantConditions
-        if (MakeTurn.DEBUG_DO_NOTHING_UNTIL_ENEMY_MIDFIELD_MOVES && waitForSignal(world)) return;
+        if (Solution.DEBUG_DO_NOTHING_UNTIL_ENEMY_MIDFIELD_MOVES && waitForSignal(world)) return;
 
-        Result result = new MakeTurn(TEAM, self, world).makeTurn();
+        Result result = new Solution(TEAM, self, world).solve();
         move.setAction(result.action.type);
         move.setPassPower(result.action.passPower);
         move.setPassAngle(result.action.passAngle);

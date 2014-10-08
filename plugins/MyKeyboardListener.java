@@ -12,7 +12,7 @@ public class MyKeyboardListener implements KeyListener {
     public void keyPressed(@NotNull KeyEvent e) {
         if (isActionKey(e)) {
             isActionPressed = true;
-            MakeTurn.goToPuck = true;
+            Solution.goToPuck = true;
         }
     }
 
@@ -20,7 +20,7 @@ public class MyKeyboardListener implements KeyListener {
     public void keyReleased(@NotNull KeyEvent e) {
         if (isActionKey(e)) {
             isActionPressed = false;
-            MakeTurn.goToPuck = false;
+            Solution.goToPuck = false;
         }
     }
 

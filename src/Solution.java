@@ -8,7 +8,7 @@ import java.util.Collection;
 
 import static java.lang.StrictMath.*;
 
-public class MakeTurn {
+public class Solution {
     public static final int MAXIMUM_TICKS_TO_SWING = 25;
     public static final double ALLOWED_ANGLE_DIFFERENCE_TO_SHOOT = 3 * PI / 180;
     public static final double DISTANCE_ALLOWED_TO_COVER_BACKWARDS = 200;
@@ -38,7 +38,7 @@ public class MakeTurn {
 
     private final Decision decision;
 
-    public MakeTurn(@NotNull Team team, @NotNull Hockeyist self, @NotNull World world) {
+    public Solution(@NotNull Team team, @NotNull Hockeyist self, @NotNull World world) {
         this.team = team;
         this.self = self;
         this.world = world;
@@ -51,7 +51,7 @@ public class MakeTurn {
     }
 
     @NotNull
-    public Result makeTurn() {
+    public Result solve() {
         if (DEBUG_LAND_WITH_ANGLE) {
             if (self.getOriginalPositionIndex() != 0) return Result.NOTHING;
             if (debugTarget != null) {

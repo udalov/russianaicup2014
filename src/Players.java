@@ -27,9 +27,9 @@ public class Players {
         opponentGoalCenter = Point.of(opponent.getNetFront(), (opponent.getNetTop() + opponent.getNetBottom()) / 2);
 
         opponentBottomCorner = Point.of(opponent.getNetFront(), opponent.getNetBottom());
-        opponentBottomGoalPoint = Point.of(opponent.getNetFront(), opponent.getNetBottom() - Static.PUCK_RADIUS - MakeTurn.GOAL_POINT_SHIFT);
+        opponentBottomGoalPoint = Point.of(opponent.getNetFront(), opponent.getNetBottom() - Static.PUCK_RADIUS - Solution.GOAL_POINT_SHIFT);
         opponentTopCorner = Point.of(opponent.getNetFront(), opponent.getNetTop());
-        opponentTopGoalPoint = Point.of(opponent.getNetFront(), opponent.getNetTop() + Static.PUCK_RADIUS + MakeTurn.GOAL_POINT_SHIFT);
+        opponentTopGoalPoint = Point.of(opponent.getNetFront(), opponent.getNetTop() + Static.PUCK_RADIUS + Solution.GOAL_POINT_SHIFT);
     }
 
     @NotNull

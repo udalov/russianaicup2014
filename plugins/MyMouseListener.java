@@ -24,8 +24,8 @@ public class MyMouseListener implements MouseInputListener {
 
     @Override
     public void mouseReleased(@NotNull MouseEvent e) {
-        MakeTurn.debugTarget = pressed;
-        MakeTurn.debugDirection = current;
+        Solution.debugTarget = pressed;
+        Solution.debugDirection = current;
         pressed = null;
         current = null;
     }
