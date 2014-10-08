@@ -21,7 +21,6 @@ public class Solution {
     public static final boolean DEBUG_DO_NOTHING_UNTIL_ENEMY_MIDFIELD_MOVES = false;
 
     public static final boolean DEBUG_LAND_WITH_ANGLE = false;
-
     public static volatile Point debugTarget;
     public static volatile Point debugDirection;
 
@@ -160,6 +159,7 @@ public class Solution {
             if (abs(firstMove.speedup) < 1e-9) continue;
             secondMove: for (Go secondMove : iteratePossibleMoves(2)) {
                 if (firstMove.speedup > secondMove.speedup || (firstMove.speedup == secondMove.speedup && firstMove.turn > secondMove.turn)) break;
+                if (firstMove.speedup * secondMove.speedup < 0) break;
                 State next = state;
                 for (int i = 20; i < 40 && i < bestTick - 3; i++) {
                     next = next.moveAllNoCollisions(secondMove, Go.NOWHERE);
@@ -169,7 +169,7 @@ public class Solution {
                         continue secondMove;
                     }
                 }
-                for (int i = 40; i < 65 && i < bestTick - 3; i++) {
+                for (int i = 40; i < 55 && i < bestTick - 3; i++) {
                     next = next.moveAllNoCollisions(Go.NOWHERE, Go.NOWHERE);
                     if (permissionToShoot(i - 40 >= 10 ? i - 40 : 0, next) || canScoreWithPass(next)) {
                         best = firstMove;
@@ -190,13 +190,14 @@ public class Solution {
                 Players.opponent.getNetFront() - Players.attack.x * 300,
                 me.point.y > Static.CENTER.y ? Static.CENTER.y + 200 : Static.CENTER.y - 200
         );
-        return new Result(Do.NONE, goTo(target));
+        return new Result(Do.NONE, naiveGoTo(target));
     }
 
     @Nullable
     private Do maybeShoot() {
         if (!isReachable(me, puck)) return null;
-        if (canScoreWithPass(current)) {
+        HockeyistPosition puckOwner = current.puckOwner();
+        if (puckOwner != null && puckOwner.id() == me.id() && canScoreWithPass(current)) {
             Point target = Players.opponentDistantGoalPoint(puck.point);
             double correctAngle = Vec.of(puck.point, target).angleTo(me.direction());
             return Do.pass(1, correctAngle);
@@ -380,7 +381,7 @@ public class Solution {
         Point target = Players.opponentDistantGoalPoint(me.point);
         double passAngle = Vec.of(state.puck.point, target).angleTo(me.direction());
         if (abs(passAngle) >= Const.passSector / 2) return false;
-        Vec strikeDirection = Vec.of(me.angle + passAngle);
+        Vec strikeDirection = Vec.of(Util.normalize(me.angle + passAngle));
         return feasibleLocationToShoot(maximumEffectivePassPower(me), strikeDirection, state.enemyGoalie(), state.puck.point, me);
     }
 
@@ -402,15 +403,17 @@ public class Solution {
         return probabilityToScore(strikePower, strikeDirection, defendingGoalie, puck, attacker) > ACCEPTABLE_PROBABILITY_TO_SCORE;
     }
 
+    private static final int[] SPEEDUPS = {1, -1, 0};
     @NotNull
     private Iterable<Go> iteratePossibleMoves(int step) {
         double d = Const.hockeyistTurnAngleFactor * me.agility();
         Collection<Go> result = new ArrayList<>(51);
-        for (int speedup = -1; speedup <= 1; speedup++) {
-            for (int t = -step; t <= step; t++) {
-                double turn = t * d / step;
-                result.add(Go.go(speedup, turn));
+        for (int speedup : SPEEDUPS) {
+            for (int t = step; t > 0; t--) {
+                result.add(Go.go(speedup, -t * d / step));
+                result.add(Go.go(speedup, t * d / step));
             }
+            result.add(Go.go(speedup, 0));
         }
 
         return result;
@@ -486,23 +489,28 @@ public class Solution {
 
         double puckSpeed = Const.struckPuckInitialSpeedFactor * strikePower + attacker.velocity.projection(strikeDirection);
 
-        Vec trajectory = Vec.of(puck, target);
-        boolean withinGoalieReach = min(goalieNearby.y, goalieDistant.y) <= puck.y && puck.y <= max(goalieNearby.y, goalieDistant.y);
-        double puckStartY = (withinGoalieReach ? puck.y : goalieNearby.y) - puckSpeed * sin(trajectory.angleTo(verticalMovement));
         Line line = Line.between(puck, target);
-        Point puckStart = line.when(puckStartY);
+        boolean withinGoalieReach = min(goalieNearby.y, goalieDistant.y) <= puck.y && puck.y <= max(goalieNearby.y, goalieDistant.y);
+        Point puckStart = line.when(withinGoalieReach ? puck.y : goalieNearby.y);
 
         // Ignore friction since no rebounds are expected and the distance is very small
-        double time = puckStart.distance(target) / puckSpeed;
+        // -1 because goalie falls behind on 1 tick
+        double time = puckStart.distance(target) / puckSpeed - 1;
         Point goalieFinish = defendingGoalie.shift(verticalMovement.multiply(time * Const.goalieMaxSpeed));
 
         // Now we should check if distance between the following segments is >= radius(puck) + radius(goalie):
         // (goalie, goalieFinish) and (puckStart, target)
+        Vec trajectory = Vec.of(puck, target);
         boolean intersects = signum(Vec.of(puck, goalieNearby).crossProduct(trajectory)) !=
                              signum(Vec.of(puck, goalieFinish).crossProduct(trajectory));
         if (intersects) return 0;
 
         return min(1, line.project(goalieFinish).distance(goalieFinish) / (Static.HOCKEYIST_RADIUS + Static.PUCK_RADIUS));
+    }
+
+    @NotNull
+    private Go naiveGoTo(@NotNull Point target) {
+        return Go.go(1, me.angleTo(target));
     }
 
     @NotNull
@@ -554,6 +562,6 @@ public class Solution {
 
     @Override
     public String toString() {
-        return String.format("tick %d puck %s %s", world.getTick(), puck, me);
+        return String.format("tick %d puck %s %s", world.getTick(), puck, current);
     }
 }
