@@ -501,8 +501,8 @@ public class MakeTurn {
             // The target is behind, but we need to turn around and go forward
             return Go.go(0, alpha);
         } else {
-            double turn = alpha > 0 ? alpha - PI : PI - alpha;
-            if (abs(PI - abs(alpha)) < ALLOWED_ANGLE_FOR_GOING_WITH_FULL_SPEED) {
+            double turn = alpha > 0 ? alpha - PI : alpha + PI;
+            if (PI - abs(alpha) < ALLOWED_ANGLE_FOR_GOING_WITH_FULL_SPEED) {
                 return Go.go(closeBy ? 1 : -1, turn);
             }
             return Go.go(speedTowards > 1 || closeBy ? 1 : 0, turn);
