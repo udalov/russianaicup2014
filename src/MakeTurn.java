@@ -10,7 +10,7 @@ import static java.lang.StrictMath.*;
 
 public class MakeTurn {
     public static final int MAXIMUM_TICKS_TO_SWING = 25;
-    public static final double ALLOWED_ANGLE_DIFFERENCE_TO_SHOOT = 6 * PI / 180;
+    public static final double ALLOWED_ANGLE_DIFFERENCE_TO_SHOOT = 3 * PI / 180;
     public static final double DISTANCE_ALLOWED_TO_COVER_BACKWARDS = 200;
     public static final double DEFAULT_PASS_POWER = 0.75;
     public static final double GOAL_POINT_SHIFT = 3; // TODO: revise
@@ -84,6 +84,7 @@ public class MakeTurn {
         // Else if the puck is free or owned by an enemy, try to obtain/volley it
         if ((puckOwner == null || puckOwner.hockeyist.getPlayerId() != Players.me.getId())) {
             // If we can score in 10-20 turns, start swinging to volley
+            // TODO: (!) also try to turn a little before receiving the puck for the volley
             if (shouldStartSwinging()) {
                 return Result.SWING;
             }
@@ -190,7 +191,7 @@ public class MakeTurn {
             return Do.pass(1, correctAngle);
         }
         if (shouldStartSwinging()) return Do.SWING;
-        if (permissionToShoot(Const.maxEffectiveSwingTicks, current)) return Do.STRIKE;
+        if (permissionToShoot(self.getSwingTicks(), current)) return Do.STRIKE;
         return null;
     }
 
@@ -257,7 +258,7 @@ public class MakeTurn {
         if (puckOwner == null) {
             Result wait;
             // TODO: not puck binding point, but intersection of puck trajectory and our direction
-            if (role == Decision.Role.ATTACK && feasibleLocationToShoot(1, current.enemyGoalie(), Util.puckBindingPoint(me), me)) {
+            if (role == Decision.Role.ATTACK && feasibleLocationToShoot(1, null, Util.puckBindingPoint(me), me)) {
                 wait = waitForPuckToCome(Vec.of(me.point, Players.opponentDistantGoalPoint(me.point)).angle(), true);
             } else {
                 wait = waitForPuckToCome(me.angle, false);

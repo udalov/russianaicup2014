@@ -64,7 +64,7 @@ public class MyRenderer {
         if (puckOwner == null) return;
 
         Point puck = Point.of(world.getPuck());
-        Point target = Point.of(puckOwner).shift(Vec.direction(puckOwner).multiply(500));
+        Point target = Point.of(puckOwner).shift(Vec.direction(puckOwner).multiply(700));
 
         save();
         g.setStroke(new BasicStroke(1f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 1f, new float[]{10f}, 0f));
