@@ -16,6 +16,7 @@ public class MakeTurn {
     public static final double GOAL_POINT_SHIFT = 3; // TODO: revise
     public static final double TAKE_FREE_PUCK_MINIMUM_PROBABILITY = 0.8;
     public static final double ACCEPTABLE_PROBABILITY_TO_SCORE = 0.8;
+    public static final double ALLOWED_ANGLE_FOR_GOING_WITH_FULL_SPEED = 2 * Const.hockeyistTurnAngleFactor;
 
     public static final boolean DEBUG_DO_NOTHING_UNTIL_ENEMY_MIDFIELD_MOVES = false;
 
@@ -372,7 +373,6 @@ public class MakeTurn {
     }
 
     private static double maximumEffectivePassPower(@NotNull HockeyistPosition me) {
-        // TODO: do attributes really count here?
         return Const.passPowerFactor * me.strength();
     }
 
@@ -382,15 +382,7 @@ public class MakeTurn {
             @NotNull Point puck,
             @NotNull HockeyistPosition attacker
     ) {
-        // TODO: optimize maybe, this is too slow
         return probabilityToScore(strikePower, defendingGoalie, puck, attacker) > ACCEPTABLE_PROBABILITY_TO_SCORE;
-/*
-        // TODO: improve this heuristic to better reflect the actual function value (probabilityToScore)
-        Point goal = Players.opponentGoalCenter;
-        if (puck.distance(goal) < 220 || puck.distance(Static.CENTER) < 200) return false;
-        double dx = abs(puck.x - goal.x);
-        return dx > 150 && dx < abs(Static.CENTER.x - goal.x) && abs(puck.y - goal.y) > 70;
-*/
     }
 
     @NotNull
@@ -475,7 +467,7 @@ public class MakeTurn {
         Line line = Line.between(puck, target);
         Point puckStart = line.when(puckStartY);
 
-        // TODO: friction
+        // Ignore friction since no rebounds are expected and the distance is very small
         double time = puckStart.distance(target) / puckSpeed;
         Point goalieFinish = defendingGoalie.shift(verticalMovement.multiply(time * Const.goalieMaxSpeed));
 
@@ -496,13 +488,10 @@ public class MakeTurn {
 
         boolean closeBy = distance < speed * speed / 2 / Const.hockeyistSpeedUpFactor / me.agility();
 
-        // TODO: unhardcode
-        double eps = 2 * Const.hockeyistTurnAngleFactor;
-
         double speedTowards = me.velocity.projection(Vec.of(me.point, target));
         if (abs(alpha) < PI / 2) {
             // The target is ahead, moving forward
-            if (abs(alpha) < eps) {
+            if (abs(alpha) < ALLOWED_ANGLE_FOR_GOING_WITH_FULL_SPEED) {
                 // Keep moving forward, accelerate or slow down depending on the distance
                 return Go.go(closeBy ? -1 : 1, alpha);
             }
@@ -513,7 +502,7 @@ public class MakeTurn {
             return Go.go(0, alpha);
         } else {
             double turn = alpha > 0 ? alpha - PI : PI - alpha;
-            if (abs(PI - abs(alpha)) < eps) {
+            if (abs(PI - abs(alpha)) < ALLOWED_ANGLE_FOR_GOING_WITH_FULL_SPEED) {
                 return Go.go(closeBy ? 1 : -1, turn);
             }
             return Go.go(speedTowards > 1 || closeBy ? 1 : 0, turn);

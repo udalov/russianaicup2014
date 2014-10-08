@@ -71,24 +71,28 @@ public class Team {
         return n == 2 ? PERMUTATIONS_2 : PERMUTATIONS_3;
     }
 
+    private static Point[][] formations;
+
     // Defense, attack, midfield
-    // TODO: cache
     @NotNull
     public static Point[][] formations() {
-        Vec attack = Players.attack;
-        Point defensePoint = Point.of(Players.me.getNetFront(), Static.CENTER.y).shift(attack.multiply(Static.HOCKEYIST_RADIUS * 3.2));
-        return new Point[][]{
-                {
-                        defensePoint,
-                        Static.CENTER.shift(Vec.of(0, -200).plus(attack.multiply(200))),
-                        Static.CENTER.shift(Vec.of(0, 200).plus(attack.multiply(-100)))
-                },
-                {
-                        defensePoint,
-                        Static.CENTER.shift(Vec.of(0, 200).plus(attack.multiply(200))),
-                        Static.CENTER.shift(Vec.of(0, -200).plus(attack.multiply(-100)))
-                },
-        };
+        if (formations == null) {
+            Vec attack = Players.attack;
+            Point defensePoint = Point.of(Players.me.getNetFront(), Static.CENTER.y).shift(attack.multiply(Static.HOCKEYIST_RADIUS * 3.2));
+            formations = new Point[][]{
+                    {
+                            defensePoint,
+                            Static.CENTER.shift(Vec.of(0, -200).plus(attack.multiply(200))),
+                            Static.CENTER.shift(Vec.of(0, 200).plus(attack.multiply(-100)))
+                    },
+                    {
+                            defensePoint,
+                            Static.CENTER.shift(Vec.of(0, 200).plus(attack.multiply(200))),
+                            Static.CENTER.shift(Vec.of(0, -200).plus(attack.multiply(-100)))
+                    },
+            };
+        }
+        return formations;
     }
 
     @NotNull
