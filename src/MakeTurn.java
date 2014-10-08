@@ -313,7 +313,7 @@ public class MakeTurn {
     @NotNull
     private Do strikeOrCancelOrContinueSwinging() {
         int swingTicks = self.getSwingTicks();
-        if (swingTicks < Const.swingActionCooldownTicks) return Do.NONE;
+        if (swingTicks < Const.swingActionCooldownTicks) return Do.SWING;
 
         if (isReachable(me, puck)) {
             State nextTurn = current.apply(Go.NOWHERE);
@@ -332,13 +332,14 @@ public class MakeTurn {
         for (int i = 0; i < Const.swingActionCooldownTicks; i++) {
             state = state.moveAllNoCollisions(Go.NOWHERE, Go.NOWHERE);
         }
-        return continueSwinging(state, Const.swingActionCooldownTicks);
+        return (isReachable(state.me(), state.puck) && permissionToShoot(Const.swingActionCooldownTicks, state)) ||
+               continueSwinging(state, Const.swingActionCooldownTicks);
     }
 
     private static boolean continueSwinging(@NotNull State state, int swingTicks) {
         for (int i = swingTicks; i < MAXIMUM_TICKS_TO_SWING; i++) {
-            if (isReachable(state.me(), state.puck) && permissionToShoot(i, state)) return true;
             state = state.moveAllNoCollisions(Go.NOWHERE, Go.NOWHERE);
+            if (isReachable(state.me(), state.puck) && permissionToShoot(i, state)) return true;
         }
         return false;
     }

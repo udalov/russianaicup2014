@@ -194,11 +194,10 @@ public class MyRenderer {
 
     @Nullable
     private Hockeyist findPuckOwner() {
-        try {
-            return Util.findById(world, world.getPuck().getOwnerHockeyistId());
-        } catch (AssertionError e) {
-            return null;
+        for (Hockeyist hockeyist : world.getHockeyists()) {
+            if (hockeyist.getId() == world.getPuck().getOwnerHockeyistId()) return hockeyist;
         }
+        return null;
     }
 
     private void save() {
