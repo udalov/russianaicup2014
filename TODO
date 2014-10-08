@@ -1,4 +1,14 @@
-- don't bump into the wall/corner!
-- don't push enemies onto the free puck
-- only make pass if there's enough space
-- swing before we even own the puck
+Critical
+
+- substitute
+- overtime with no goalies
+
+Major
+
+- pass only if it's safe
+- pass with strike against the wall
+- improve behavior with puck near the enemy goal
+
+Normal
+
+- find the safest path to go forward

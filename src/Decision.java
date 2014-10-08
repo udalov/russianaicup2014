@@ -14,4 +14,9 @@ public class Decision {
         MIDFIELD,
         ATTACK
     }
+
+    @Override
+    public String toString() {
+        return id + " " + role + " " + dislocation;
+    }
 }

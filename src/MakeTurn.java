@@ -36,6 +36,8 @@ public class MakeTurn {
     private final HockeyistPosition me;
     private final PuckPosition puck;
 
+    private final Decision decision;
+
     public MakeTurn(@NotNull Team team, @NotNull Hockeyist self, @NotNull World world) {
         this.team = team;
         this.self = self;
@@ -44,6 +46,8 @@ public class MakeTurn {
         this.current = State.of(self, world);
         this.me = current.me();
         this.puck = current.puck;
+
+        this.decision = team.getDecision(me.id());
     }
 
     @NotNull
@@ -67,7 +71,6 @@ public class MakeTurn {
         }
 
         HockeyistPosition puckOwner = current.puckOwner();
-        Decision decision = team.getDecision(me.id());
 
         // TODO: entirely different logic should be present for overtime with no goalies
 
@@ -82,7 +85,7 @@ public class MakeTurn {
 
         // If we have the puck, swing/shoot/pass or just go to the attack point
         if (puckOwner != null && puckOwner.id() == me.id()) {
-            return withPuck(decision.role);
+            return withPuck();
         }
 
         // Else if the puck is free or owned by an enemy, try to obtain/volley it
@@ -93,17 +96,17 @@ public class MakeTurn {
                 return Result.SWING;
             }
             // Else if the puck is close, try to obtain it, i.e. either wait for it to come or go and try to take/strike it
-            Result obtain = obtainPuck(decision.role);
+            Result obtain = obtainPuck();
             if (obtain != null) return obtain;
         }
 
         // Else stay where we're supposed to stay
-        return obey(decision);
+        return obey();
     }
 
     @NotNull
-    private Result withPuck(@NotNull Decision.Role role) {
-        switch (role) {
+    private Result withPuck() {
+        switch (decision.role) {
             case MIDFIELD:
                 Result passMidfieldToAttacker = maybePassToAttacker();
                 if (passMidfieldToAttacker != null) return passMidfieldToAttacker;
@@ -129,7 +132,7 @@ public class MakeTurn {
                 }
                 return goForwardToShootingPosition();
         }
-        throw new AssertionError(role);
+        throw new AssertionError(decision.role);
     }
 
     @NotNull
@@ -204,7 +207,7 @@ public class MakeTurn {
     }
 
     @NotNull
-    private Result obey(@NotNull Decision decision) {
+    private Result obey() {
         // TODO: maybe substitute
         Point dislocation = decision.dislocation;
         switch (decision.role) {
@@ -257,16 +260,16 @@ public class MakeTurn {
     }
 
     @Nullable
-    private Result obtainPuck(@NotNull Decision.Role role) {
+    private Result obtainPuck() {
         double distance = me.distance(puck);
-        boolean close = distance < 200 || (distance < 400 && puck.velocity.projection(Vec.of(puck, me)) > 2);
+        boolean close = distance < 300 || (distance < 400 && puck.velocity.projection(Vec.of(puck, me)) > 2);
         if (!close) return null;
 
         HockeyistPosition puckOwner = current.puckOwner();
         if (puckOwner == null) {
             Result wait;
             // TODO: not puck binding point, but intersection of puck trajectory and our direction
-            if (role == Decision.Role.ATTACK && feasibleLocationToShoot(me.strength(), null, Util.puckBindingPoint(me), me)) {
+            if (decision.role == Decision.Role.ATTACK && feasibleLocationToShoot(me.strength(), null, Util.puckBindingPoint(me), me)) {
                 wait = waitForPuckToCome(Vec.of(me.point, Players.opponentDistantGoalPoint(me.point)).angle(), true);
             } else {
                 wait = waitForPuckToCome(me.angle, false);
@@ -276,8 +279,10 @@ public class MakeTurn {
             return new Result(takeOrStrikePuckIfReachable(), goToPuck());
         }
 
-        // TODO: defender should not come out very early because the enemy can dribble him
-        // TODO (?): if (role == Decision.Role.DEFENSE) return null;
+        // Defender should not go out very far away from his point because the enemy can dribble him
+        if (decision.role == Decision.Role.DEFENSE) {
+            if (puck.distance(decision.dislocation) > 200) return null;
+        }
 
         if (isReachable(me, puck) || isReachable(me, puckOwner)) {
             return new Result(Do.STRIKE, goToPuck());
