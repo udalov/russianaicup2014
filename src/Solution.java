@@ -74,7 +74,7 @@ public class Solution {
         // If we are swinging, strike or cancel strike or continue swinging
         if (self.getState() == HockeyistState.SWINGING) {
             Do action = strikeOrCancelOrContinueSwinging();
-            if (current.overtimeNoGoalies() && action == Do.CANCEL_STRIKE) action = Do.STRIKE;
+            if (current.overtimeNoGoalies() && action == Do.CANCEL_STRIKE && isReachable(me, puck)) action = Do.STRIKE;
             return new Result(action, Go.NOWHERE);
         }
 
