@@ -103,12 +103,16 @@ public class MyRenderer {
         restore();
     }
 
+    private static final int FUTURE_STEPS_TO_APPLY = 1;
+
     private void renderFuture() {
         Hockeyist puckOwner = findPuckOwner();
-        State state = State.of(puckOwner != null ? puckOwner : world.getHockeyists()[0], world);
-        for (int i = 0; i < 10; i++) {
+        State current = State.of(puckOwner != null ? puckOwner : world.getHockeyists()[0], world);
+        State state = current;
+        for (int i = 0; i < FUTURE_STEPS_TO_APPLY; i++) {
             state = state.apply(Go.NOWHERE);
         }
+        System.out.println(world + " real " + current.puck + " forecast " + state.puck);
 
         save();
         g.setColor(new Color(128, 128, 128));

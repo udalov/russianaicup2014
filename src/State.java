@@ -146,17 +146,7 @@ public class State {
 
     @NotNull
     private PuckPosition movePuck() {
-        PuckPosition newPuck = puck.move();
-        Point point = newPuck.point;
-        boolean dampX = point.x - Const.rinkLeft < Static.PUCK_RADIUS ||
-                        Const.rinkRight - point.x < Static.PUCK_RADIUS;
-        boolean dampY = point.y - Const.rinkTop < Static.PUCK_RADIUS ||
-                        Const.rinkBottom - point.y < Static.PUCK_RADIUS;
-        if (dampX || dampY) {
-            Vec velocity = Vec.of(puck.velocity.x * (dampX ? -0.25 : 1), puck.velocity.y * (dampY ? -0.25 : 1));
-            return new PuckPosition(puck.puck, puck.point, velocity);
-        }
-        return newPuck;
+        return puck.move();
     }
 
     @NotNull
