@@ -53,6 +53,10 @@ public class State {
         return null;
     }
 
+    public boolean overtimeNoGoalies() {
+        return enemyGoalie() == null;
+    }
+
     @Nullable
     public HockeyistPosition puckOwner() {
         return puckOwnerIndex != -1 ? pos[puckOwnerIndex] : null;

@@ -71,11 +71,11 @@ public class Solution {
 
         HockeyistPosition puckOwner = current.puckOwner();
 
-        // TODO: entirely different logic should be present for overtime with no goalies
-
         // If we are swinging, strike or cancel strike or continue swinging
         if (self.getState() == HockeyistState.SWINGING) {
-            return new Result(strikeOrCancelOrContinueSwinging(), Go.NOWHERE);
+            Do action = strikeOrCancelOrContinueSwinging();
+            if (current.overtimeNoGoalies() && action == Do.CANCEL_STRIKE) action = Do.STRIKE;
+            return new Result(action, Go.NOWHERE);
         }
 
         // If not swinging, maybe we have the puck and are ready to shoot or the puck is just flying by at the moment
@@ -198,7 +198,7 @@ public class Solution {
         if (!isReachable(me, puck)) return null;
         HockeyistPosition puckOwner = current.puckOwner();
         if (puckOwner != null && puckOwner.id() == me.id() && canScoreWithPass(current)) {
-            Point target = Players.opponentDistantGoalPoint(puck.point);
+            Point target = current.overtimeNoGoalies() ? Players.opponentGoalCenter : Players.opponentDistantGoalPoint(puck.point);
             double correctAngle = Vec.of(puck.point, target).angleTo(me.direction());
             return Do.pass(1, correctAngle);
         }
@@ -232,7 +232,7 @@ public class Solution {
         if (attacker == null) return null;
         Vec desirableDirection = Vec.of(attacker.point, Players.opponentDistantGoalPoint(attacker.point)).normalize();
         Point location = attacker.point.shift(desirableDirection.multiply(Const.puckBindingRange));
-        if (feasibleLocationToShoot(1, attacker.direction(), null, Util.puckBindingPoint(attacker), attacker)) {
+        if (feasibleLocationToShoot(1, attacker.direction(), null, Util.puckBindingPoint(attacker), attacker, current.overtimeNoGoalies())) {
             Result pass = makePassMaybeTurnBefore(location);
             if (pass != null) return pass;
         }
@@ -287,7 +287,7 @@ public class Solution {
             Result wait;
             // TODO: not puck binding point, but intersection of puck trajectory and our direction
             if (decision.role == Decision.Role.ATTACK &&
-                feasibleLocationToShoot(me.strength(), me.direction(), null, Util.puckBindingPoint(me), me)) {
+                feasibleLocationToShoot(me.strength(), me.direction(), null, Util.puckBindingPoint(me), me, current.overtimeNoGoalies())) {
                 wait = waitForPuckToCome(Vec.of(me.point, Players.opponentDistantGoalPoint(me.point)).angle(), true);
             } else {
                 wait = waitForPuckToCome(me.angle, false);
@@ -380,25 +380,25 @@ public class Solution {
     private static boolean permissionToShoot(int swingTicks, @NotNull State state) {
         HockeyistPosition me = state.me();
         double strikePower = effectiveShotPower(swingTicks, me);
-        return feasibleLocationToShoot(strikePower, me.direction(), state.enemyGoalie(), state.puck.point, me) &&
-               angleDifferenceToOptimal(state) <= ALLOWED_ANGLE_DIFFERENCE_TO_SHOOT;
+        return feasibleLocationToShoot(strikePower, me.direction(), state.enemyGoalie(), state.puck.point, me, state.overtimeNoGoalies()) &&
+               angleDifferenceToOptimal(state) <= ALLOWED_ANGLE_DIFFERENCE_TO_SHOOT * (state.overtimeNoGoalies() ? 3 : 1);
     }
 
-    // TODO: (!) handle overtime with no goalies
     private static double angleDifferenceToOptimal(@NotNull State state) {
         Point puck = state.puck.point;
-        Point target = Players.opponentDistantGoalPoint(puck);
+        Point target = state.overtimeNoGoalies() ? Players.opponentGoalCenter : Players.opponentDistantGoalPoint(puck);
         Vec trajectory = Vec.of(puck, target);
         return abs(state.me().angleTo(trajectory));
     }
 
     private static boolean canScoreWithPass(@NotNull State state) {
         HockeyistPosition me = state.me();
-        Point target = Players.opponentDistantGoalPoint(me.point);
+        Point target = state.overtimeNoGoalies() ? Players.opponentGoalCenter : Players.opponentDistantGoalPoint(me.point);
         double passAngle = Vec.of(state.puck.point, target).angleTo(me.direction());
         if (abs(passAngle) >= Const.passSector / 2) return false;
         Vec strikeDirection = Vec.of(Util.normalize(me.angle + passAngle));
-        return feasibleLocationToShoot(maximumEffectivePassPower(me), strikeDirection, state.enemyGoalie(), state.puck.point, me);
+        return feasibleLocationToShoot(maximumEffectivePassPower(me), strikeDirection, state.enemyGoalie(), state.puck.point,
+                                       me, state.overtimeNoGoalies());
     }
 
     private static double effectiveShotPower(int swingTicks, @NotNull HockeyistPosition me) {
@@ -414,8 +414,14 @@ public class Solution {
             @NotNull Vec strikeDirection,
             @Nullable Point defendingGoalie,
             @NotNull Point puck,
-            @NotNull HockeyistPosition attacker
+            @NotNull HockeyistPosition attacker,
+            boolean overtimeNoGoalies
     ) {
+        if (overtimeNoGoalies) {
+            // TODO: maybe something more clever?
+            return abs(puck.x - Players.opponent.getNetFront()) <= abs(Static.CENTER.x - Players.opponent.getNetFront())
+                   || strikePower > 0.75;
+        }
         return probabilityToScore(strikePower, strikeDirection, defendingGoalie, puck, attacker) > ACCEPTABLE_PROBABILITY_TO_SCORE;
     }
 
