@@ -1,13 +1,13 @@
 Critical
 
-- more frequent losses on one side than on the other :(
-
 Major
 
+- defender should not come out if any other ally is closer
 - pass only if it's safe
-- pass with strike against the wall
 - improve behavior with puck near the enemy goal
 - in the beginning, make a pass to the defender
+- strike opponents when necessary
+- volley to make pass against the wall
 
 Normal
 

@@ -5,6 +5,7 @@ import model.World;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 
 import static java.lang.StrictMath.max;
@@ -80,7 +81,7 @@ public class State {
     @NotNull
     private Iterable<HockeyistPosition> filterTeam(boolean allies) {
         // TODO: optimize
-        Hockeyist myHockeyist = pos[myIndex].hockeyist;
+        Hockeyist myHockeyist = me().hockeyist;
         long myPlayerId = myHockeyist.getPlayerId();
         long myId = myHockeyist.getId();
         List<HockeyistPosition> result = new ArrayList<>(3);
@@ -93,6 +94,22 @@ public class State {
                 result.add(position);
             }
         }
+        return result;
+    }
+
+    private static final int[] SPEEDUPS = {1, -1, 0};
+    @NotNull
+    public Iterable<Go> iteratePossibleMoves(int step) {
+        double d = Const.hockeyistTurnAngleFactor * me().agility();
+        Collection<Go> result = new ArrayList<>((2 * step + 1) * SPEEDUPS.length);
+        for (int speedup : SPEEDUPS) {
+            for (int t = step; t > 0; t--) {
+                result.add(Go.go(speedup, -t * d / step));
+                result.add(Go.go(speedup, t * d / step));
+            }
+            result.add(Go.go(speedup, 0));
+        }
+
         return result;
     }
 
