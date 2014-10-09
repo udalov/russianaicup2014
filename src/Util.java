@@ -1,5 +1,7 @@
 import model.Hockeyist;
+import model.HockeyistState;
 import model.Unit;
+import model.World;
 
 import static java.lang.StrictMath.*;
 
@@ -53,5 +55,19 @@ public class Util {
         return Const.pickUpPuckBaseChance +
                max(effectiveAttribute(h, h.getDexterity()), effectiveAttribute(h, h.getAgility())) -
                puck.velocity.length() / 20;
+    }
+
+    @NotNull
+    public static Hockeyist findRestingAllyWithMaxStamina(@NotNull World world) {
+        Hockeyist best = null;
+        for (Hockeyist ally : world.getHockeyists()) {
+            if (ally.isTeammate() && ally.getState() == HockeyistState.RESTING) {
+                if (best == null || best.getStamina() < ally.getStamina()) {
+                    best = ally;
+                }
+            }
+        }
+        assert best != null : "No resting hockeyists O_o: " + world;
+        return best;
     }
 }

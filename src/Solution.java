@@ -65,8 +65,16 @@ public class Solution {
         }
 
         if (world.getMyPlayer().isJustScoredGoal() || world.getMyPlayer().isJustMissedGoal()) {
-            // TODO: maybe substitute
-            return Result.NOTHING;
+            if (team.timeToRest.contains(me.id())) {
+                if (me.point.y < Const.rinkTop + Const.substitutionAreaHeight &&
+                    me.distance(Players.myGoalCenter) < me.distance(Players.opponentGoalCenter)) {
+                    Hockeyist best = Util.findRestingAllyWithMaxStamina(world);
+                    return new Result(Do.substitute(best.getTeammateIndex()), Go.NOWHERE);
+                }
+                return new Result(Do.NONE, goTo(Point.of((Static.CENTER.x + Players.me.getNetFront()) / 2, 0)));
+            } else {
+                return new Result(Do.NONE, goTo(Static.CENTER));
+            }
         }
 
         HockeyistPosition puckOwner = current.puckOwner();

@@ -3,14 +3,13 @@ import model.HockeyistState;
 import model.HockeyistType;
 import model.World;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 
 public class Team {
     private int currentTick = -1;
     private final List<Decision> decisions = new ArrayList<>(3);
+
+    public Collection<Long> timeToRest;
 
     public int lastGoalTick;
 
@@ -21,15 +20,16 @@ public class Team {
         currentTick = world.getTick();
         decisions.clear();
 
-        if (world.getMyPlayer().isJustMissedGoal() || world.getMyPlayer().isJustScoredGoal()) {
+        boolean justAfterGoal = world.getMyPlayer().isJustMissedGoal() || world.getMyPlayer().isJustScoredGoal();
+        if (justAfterGoal) {
             lastGoalTick = currentTick;
         }
 
         List<Hockeyist> candidates = new ArrayList<>(3);
+        List<Hockeyist> resting = new ArrayList<>(3);
         for (Hockeyist hockeyist : world.getHockeyists()) {
             if (hockeyist.getPlayerId() != Players.me.getId() || hockeyist.getType() == HockeyistType.GOALIE) continue;
-            if (hockeyist.getState() == HockeyistState.RESTING) continue;
-            candidates.add(hockeyist);
+            (hockeyist.getState() == HockeyistState.RESTING ? resting : candidates).add(hockeyist);
         }
 
         Collections.sort(candidates, new Comparator<Hockeyist>() {
@@ -38,6 +38,10 @@ public class Team {
                 return Integer.compare(o1.getOriginalPositionIndex(), o2.getOriginalPositionIndex());
             }
         });
+
+        timeToRest = Players.teamSize == 6
+                     ? idsToSubstitute(new ArrayList<>(candidates), resting, justAfterGoal)
+                     : Collections.<Long>emptySet();
 
         int n = candidates.size();
         double best = Double.MAX_VALUE;
@@ -75,7 +79,7 @@ public class Team {
 
     // Defense, attack, midfield
     @NotNull
-    public static Point[][] formations() {
+    private static Point[][] formations() {
         if (formations == null) {
             Vec attack = Players.attack;
             Point defensePoint = Point.of(Players.me.getNetFront(), Static.CENTER.y).shift(attack.multiply(Static.HOCKEYIST_RADIUS * 3.2));
@@ -93,6 +97,36 @@ public class Team {
             };
         }
         return formations;
+    }
+
+    private static final Comparator<Hockeyist> STAMINA_COMPARATOR = new Comparator<Hockeyist>() {
+        @Override
+        public int compare(@NotNull Hockeyist o1, @NotNull Hockeyist o2) {
+            return Double.compare(o1.getStamina(), o2.getStamina());
+        }
+    };
+
+    @NotNull
+    private static Collection<Long> idsToSubstitute(
+            @NotNull List<Hockeyist> candidates,
+            @NotNull List<Hockeyist> resting,
+            boolean justAfterGoal
+    ) {
+        Collections.sort(candidates, STAMINA_COMPARATOR);
+        Collections.sort(resting, STAMINA_COMPARATOR);
+        Collections.reverse(resting);
+
+        Collection<Long> result = null;
+        for (int i = 0; i < 3; i++) {
+            double diff = resting.get(i).getStamina() - candidates.get(i).getStamina();
+            boolean substitute = justAfterGoal ? diff > 50 : diff > 500;
+            if (substitute) {
+                if (result == null) result = new ArrayList<>(3);
+                result.add(candidates.get(i).getId());
+            }
+        }
+
+        return result != null ? result : Collections.<Long>emptySet();
     }
 
     @NotNull
