@@ -138,24 +138,19 @@ public class State {
 
         if (newPuck == null) {
             // TODO: support collisions of puck with goalies
-            newPuck = movePuck();
+            newPuck = puck.move();
         }
 
         return new State(positions, newPuck, myIndex, puckOwnerIndex);
     }
 
     @NotNull
-    private PuckPosition movePuck() {
-        return puck.move();
-    }
-
-    @NotNull
-    public State moveAllNoCollisions(@NotNull Go myDirection, @NotNull Go enemyDirection) {
+    public State moveAllNoCollisions(@NotNull Go myDirection, @NotNull Go othersDirection) {
         HockeyistPosition[] positions = Arrays.copyOf(pos, pos.length);
         for (int i = 0, n = positions.length; i < n; i++) {
-            positions[i] = moveSingleHockeyist(positions[i], i == myIndex ? myDirection : enemyDirection);
+            positions[i] = moveSingleHockeyist(positions[i], i == myIndex ? myDirection : othersDirection);
         }
-        return new State(positions, puckOwnerIndex == -1 ? movePuck() : puck.inFrontOf(positions[puckOwnerIndex]), myIndex, puckOwnerIndex);
+        return new State(positions, puckOwnerIndex == -1 ? puck.move() : puck.inFrontOf(positions[puckOwnerIndex]), myIndex, puckOwnerIndex);
     }
 
     @NotNull
