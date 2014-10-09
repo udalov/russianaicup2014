@@ -53,6 +53,12 @@ public class Team {
                 for (int i = 0; i < n; i++) {
                     cur += Util.sqr(formation[i].distance(candidates.get(permutation[i])));
                 }
+                // TODO: this is a hack to make attacker stay on the puck's half of the rink in 2x2 games
+                if (Players.teamSize == 2) {
+                    for (int i = 0; i < n; i++) {
+                        cur += Util.sqr(formation[i].distance(world.getPuck()));
+                    }
+                }
                 if (cur < best) {
                     best = cur;
                     bestFormation = formation;
@@ -64,6 +70,21 @@ public class Team {
         for (int i = 0; i < n; i++) {
             Hockeyist candidate = candidates.get(bestPermutation[i]);
             decisions.add(new Decision(candidate.getId(), ROLES[i], bestFormation[i]));
+        }
+
+        // TODO: this is a hack to make defender come out and attack in 2x2 games
+        if (Players.teamSize == 2) {
+            long puckOwnerId = world.getPuck().getOwnerHockeyistId();
+            boolean owning = false;
+            for (Decision decision : decisions) {
+                owning |= decision.id == puckOwnerId;
+            }
+            if (owning) {
+                for (int i = 0; i < 2; i++) {
+                    Decision old = decisions.get(i);
+                    decisions.set(i, new Decision(old.id, old.id == puckOwnerId ? Decision.Role.ATTACK : Decision.Role.DEFENSE, old.dislocation));
+                }
+            }
         }
     }
 

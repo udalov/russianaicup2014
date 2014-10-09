@@ -123,7 +123,7 @@ public class Solution {
             case DEFENSE:
                 // TODO
                 Result passDefenderToAttacker = maybePassToAttacker();
-                if (passDefenderToAttacker != null) return passDefenderToAttacker;
+                if (passDefenderToAttacker != null && Players.teamSize != 2 /* TODO */) return passDefenderToAttacker;
                 HockeyistPosition midfield = findAlly(Decision.Role.MIDFIELD);
                 if (midfield != null) {
                     Result passDefenderToMidfield = makePassMaybeTurnBefore(Util.puckBindingPoint(midfield));
