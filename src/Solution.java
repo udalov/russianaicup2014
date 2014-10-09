@@ -264,7 +264,7 @@ public class Solution {
         if (me.cooldown > 0 || abs(angle) >= Const.passSector / 2) {
             return new Result(Do.NONE, Go.go(0, angle));
         } else {
-            return new Result(Do.pass(DEFAULT_PASS_POWER, angle), Go.NOWHERE);
+            return new Result(Do.pass(min(1, DEFAULT_PASS_POWER / me.strength()), angle), Go.NOWHERE);
         }
     }
 
