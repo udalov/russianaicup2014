@@ -65,16 +65,8 @@ public class Solution {
         }
 
         if (world.getMyPlayer().isJustScoredGoal() || world.getMyPlayer().isJustMissedGoal()) {
-            if (team.timeToRest.contains(me.id())) {
-                if (me.point.y < Const.rinkTop + Const.substitutionAreaHeight &&
-                    me.distance(Players.myGoalCenter) < me.distance(Players.opponentGoalCenter)) {
-                    Hockeyist best = Util.findRestingAllyWithMaxStamina(world);
-                    return new Result(Do.substitute(best.getTeammateIndex()), Go.NOWHERE);
-                }
-                return new Result(Do.NONE, goTo(Point.of((Static.CENTER.x + Players.me.getNetFront()) / 2, 0)));
-            } else {
-                return new Result(Do.NONE, goTo(Static.CENTER));
-            }
+            Result substitute = substitute();
+            return substitute != null ? substitute : new Result(Do.NONE, goTo(Static.CENTER));
         }
 
         HockeyistPosition puckOwner = current.puckOwner();
@@ -217,7 +209,11 @@ public class Solution {
 
     @NotNull
     private Result obey() {
-        // TODO: maybe substitute
+        if (decision.role != Decision.Role.DEFENSE) {
+            Result substitute = substitute();
+            if (substitute != null) return substitute;
+        }
+
         Point dislocation = decision.dislocation;
         switch (decision.role) {
             case MIDFIELD:
@@ -266,6 +262,18 @@ public class Solution {
         } else {
             return new Result(Do.pass(min(1, DEFAULT_PASS_POWER / me.strength()), angle), Go.NOWHERE);
         }
+    }
+
+    @Nullable
+    private Result substitute() {
+        if (!team.timeToRest.contains(me.id())) return null;
+
+        if (me.point.y < Const.rinkTop + Const.substitutionAreaHeight &&
+            me.distance(Players.myGoalCenter) < me.distance(Players.opponentGoalCenter)) {
+            return new Result(Do.substitute(Util.findRestingAllyWithMaxStamina(world).getTeammateIndex()), Go.NOWHERE);
+        }
+
+        return new Result(Do.NONE, goTo(Point.of((Static.CENTER.x + Players.me.getNetFront()) / 2, 0)));
     }
 
     @Nullable
