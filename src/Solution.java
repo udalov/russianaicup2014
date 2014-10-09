@@ -61,12 +61,12 @@ public class Solution {
 
         if (DEBUG_GO_TO_PUCK) {
             if (self.getOriginalPositionIndex() != 0 || !goToPuck) return Result.NOTHING;
-            return new Result(Do.NONE, goToPuck());
+            return new Result(Do.NOTHING, goToPuck());
         }
 
         if (world.getMyPlayer().isJustScoredGoal() || world.getMyPlayer().isJustMissedGoal()) {
             Result substitute = substitute();
-            return substitute != null ? substitute : new Result(Do.NONE, goTo(Static.CENTER));
+            return substitute != null ? substitute : new Result(Do.NOTHING, goTo(Static.CENTER));
         }
 
         HockeyistPosition puckOwner = current.puckOwner();
@@ -139,7 +139,7 @@ public class Solution {
         for (Go go : iteratePossibleMoves(16)) {
             State state = current.moveAllNoCollisions(go, Go.NOWHERE);
             if (permissionToShoot(0, state) || canScoreWithPass(state)) {
-                return new Result(Do.NONE, go);
+                return new Result(Do.NOTHING, go);
             }
         }
 
@@ -181,7 +181,7 @@ public class Solution {
         }
 
         if (best != null) {
-            return new Result(Do.NONE, best);
+            return new Result(Do.NOTHING, best);
         }
 
         // TODO: (!) improve
@@ -190,7 +190,7 @@ public class Solution {
                 Players.opponent.getNetFront() - Players.attack.x * 300,
                 me.point.y > Static.CENTER.y ? Static.CENTER.y + 200 : Static.CENTER.y - 200
         );
-        return new Result(Do.NONE, naiveGoTo(target));
+        return new Result(Do.NOTHING, naiveGoTo(target));
     }
 
     @Nullable
@@ -258,7 +258,7 @@ public class Solution {
         // TODO: (!) also strike against the wall
         double angle = me.angleTo(location);
         if (me.cooldown > 0 || abs(angle) >= Const.passSector / 2) {
-            return new Result(Do.NONE, Go.go(0, angle));
+            return new Result(Do.NOTHING, Go.go(0, angle));
         } else {
             return new Result(Do.pass(min(1, DEFAULT_PASS_POWER / me.strength()), angle), Go.NOWHERE);
         }
@@ -273,7 +273,7 @@ public class Solution {
             return new Result(Do.substitute(Util.findRestingAllyWithMaxStamina(world).getTeammateIndex()), Go.NOWHERE);
         }
 
-        return new Result(Do.NONE, goTo(Point.of((Static.CENTER.x + Players.me.getNetFront()) / 2, 0)));
+        return new Result(Do.NOTHING, goTo(Point.of((Static.CENTER.x + Players.me.getNetFront()) / 2, 0)));
     }
 
     @Nullable
@@ -306,7 +306,7 @@ public class Solution {
             return new Result(Do.STRIKE, goToPuck());
         }
 
-        return new Result(Do.NONE, goToPuck());
+        return new Result(Do.NOTHING, goToPuck());
     }
 
     @Nullable
@@ -338,7 +338,7 @@ public class Solution {
 
     @NotNull
     private Do takeOrStrikePuckIfReachable() {
-        if (!isReachable(me, puck)) return Do.NONE;
+        if (!isReachable(me, puck)) return Do.NOTHING;
         if (Util.takeFreePuckProbability(me, puck) > TAKE_FREE_PUCK_MINIMUM_PROBABILITY) return Do.TAKE_PUCK;
         return Do.STRIKE;
     }
@@ -575,11 +575,11 @@ public class Solution {
                 state = state.moveAllNoCollisions(Go.go(0, Util.normalize(angle - state.me().angle)), Go.NOWHERE);
             }
             if (state.me().distance(target) < 10) {
-                return new Result(Do.NONE, fullBack > 0 ? Go.go(-1, 0) : Go.go(0, Util.normalize(angle - me.angle)));
+                return new Result(Do.NOTHING, fullBack > 0 ? Go.go(-1, 0) : Go.go(0, Util.normalize(angle - me.angle)));
             }
         }
 
-        return new Result(Do.NONE, goTo(target));
+        return new Result(Do.NOTHING, goTo(target));
     }
 
     @Override

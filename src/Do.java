@@ -2,7 +2,7 @@ import model.ActionType;
 
 @SuppressWarnings("UnusedDeclaration")
 public class Do {
-    public static final Do NONE = new Do(ActionType.NONE);
+    public static final Do NOTHING = new Do(ActionType.NONE);
     public static final Do TAKE_PUCK = new Do(ActionType.TAKE_PUCK);
     public static final Do SWING = new Do(ActionType.SWING);
     public static final Do STRIKE = new Do(ActionType.STRIKE);
