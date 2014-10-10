@@ -116,7 +116,7 @@ public class Solution {
                 // TODO
                 HockeyistPosition defender = findAlly(Decision.Role.DEFENSE);
                 if (defender != null) {
-                    if (abs(me.angleTo(defender.point)) < PI / 4) {
+                    if (me.direction().innerProduct(Players.defense) > 0 && abs(me.angleTo(defender.point)) < PI / 4) {
                         Result passAttackerToDefender = makePassMaybeTurnBefore(Util.puckBindingPoint(defender));
                         if (passAttackerToDefender != null) return passAttackerToDefender;
                     }

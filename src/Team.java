@@ -75,15 +75,15 @@ public class Team {
         // TODO: this is a hack to make defender come out and attack in 2x2 games
         if (Players.teamSize == 2) {
             long puckOwnerId = world.getPuck().getOwnerHockeyistId();
-            boolean owning = false;
+            boolean swap = false;
             for (Decision decision : decisions) {
-                owning |= decision.id == puckOwnerId;
+                swap |= decision.id == puckOwnerId && decision.role == Decision.Role.DEFENSE;
             }
-            if (owning) {
-                for (int i = 0; i < 2; i++) {
-                    Decision old = decisions.get(i);
-                    decisions.set(i, new Decision(old.id, old.id == puckOwnerId ? Decision.Role.ATTACK : Decision.Role.DEFENSE, old.dislocation));
-                }
+            if (swap) {
+                Decision d0 = decisions.get(0);
+                Decision d1 = decisions.get(1);
+                decisions.set(0, new Decision(d0.id, d1.role, d1.dislocation));
+                decisions.set(1, new Decision(d1.id, d0.role, d0.dislocation));
             }
         }
     }
