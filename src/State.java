@@ -97,15 +97,17 @@ public class State {
         return result;
     }
 
-    private static final int[] SPEEDUPS = {1, -1, 0};
+    private static final double[] SPEEDUPS = {1, -1, -0.5, 0.5, 0};
     @NotNull
     public Iterable<Go> iteratePossibleMoves(int step) {
         double d = Const.hockeyistTurnAngleFactor * me().agility();
         Collection<Go> result = new ArrayList<>((2 * step + 1) * SPEEDUPS.length);
-        for (int speedup : SPEEDUPS) {
-            for (int t = step; t > 0; t--) {
-                result.add(Go.go(speedup, -t * d / step));
-                result.add(Go.go(speedup, t * d / step));
+        for (double speedup : SPEEDUPS) {
+            double turn = d;
+            for (int i = 0; i < step; i++) {
+                result.add(Go.go(speedup, -turn));
+                result.add(Go.go(speedup, turn));
+                turn *= 0.6;
             }
             result.add(Go.go(speedup, 0));
         }

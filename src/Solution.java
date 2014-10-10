@@ -139,7 +139,7 @@ public class Solution {
     @NotNull
     private Result goForwardToShootingPosition() {
         // TODO: (!) improve this heuristic
-        for (Go go : current.iteratePossibleMoves(16)) {
+        for (Go go : current.iteratePossibleMoves(8)) {
             State state = current;
             for (int i = 0; i < 35; i++) {
                 state = state.moveAllNoCollisions(i < 10 ? go : Go.NOWHERE, Go.NOWHERE);
@@ -151,7 +151,7 @@ public class Solution {
 
         Go best = null;
         int bestTick = Integer.MAX_VALUE;
-        firstMove: for (Go firstMove : current.iteratePossibleMoves(4)) {
+        firstMove: for (Go firstMove : current.iteratePossibleMoves(8)) {
             State state = current;
             for (int i = 0; i < 20 && i < bestTick - 3; i++) {
                 state = state.moveAllNoCollisions(firstMove, Go.NOWHERE);
@@ -282,7 +282,7 @@ public class Solution {
 
         double bestDistance = Double.MAX_VALUE;
         Go best = null;
-        for (Go go : current.iteratePossibleMoves(16)) {
+        for (Go go : current.iteratePossibleMoves(8)) {
             State state = current;
             for (int i = 0; i < TICKS_TO_CONSIDER_PASS_AGAINST_THE_WALL; i++) {
                 state = state.moveAllNoCollisions(go, Go.NOWHERE);
