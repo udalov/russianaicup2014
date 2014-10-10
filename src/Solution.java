@@ -506,7 +506,7 @@ public class Solution {
         Go bestGo = null;
         int bestFirstTickToReach = Integer.MAX_VALUE;
         double bestDistance = Double.MAX_VALUE;
-        for (int ticks = 10; ticks <= 40; ticks += 10) {
+        for (int ticks = 10; ticks <= 60; ticks += 10) {
             for (Go go : current.iteratePossibleMoves(4)) {
                 State state = current;
                 for (int i = 0; i < 60 && i < bestFirstTickToReach; i++) {
@@ -626,7 +626,7 @@ public class Solution {
             while (state.me().velocity.length() > 0.1) {
                 state = state.moveAllNoCollisions(Go.go(0, Util.normalize(angle - state.me().angle)), Go.NOWHERE);
             }
-            if (state.me().distance(target) < 10) {
+            if (state.me().distance(target) < 20) {
                 return new Result(Do.NOTHING, fullBack > 0 ? Go.go(-1, 0) : Go.go(0, Util.normalize(angle - me.angle)));
             }
         }
