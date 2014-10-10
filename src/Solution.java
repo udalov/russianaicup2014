@@ -6,7 +6,7 @@ import model.World;
 import static java.lang.StrictMath.*;
 
 public class Solution {
-    public static final int MAXIMUM_TICKS_TO_SWING = 25;
+    public static final int MAXIMUM_TICKS_TO_SWING = 35;
     public static final double ALLOWED_ANGLE_DIFFERENCE_TO_SHOOT = 3 * PI / 180;
     public static final double DISTANCE_ALLOWED_TO_COVER_BACKWARDS = 200;
     public static final double DEFAULT_PASS_POWER = 0.75;
@@ -249,8 +249,6 @@ public class Solution {
         Vec desirableDirection = Vec.of(attacker.point, Players.opponentDistantGoalPoint(attacker.point)).normalize();
         Point location = attacker.point.shift(desirableDirection.multiply(Const.puckBindingRange));
         if (feasibleLocationToShoot(1, attacker.direction(), null, Util.puckBindingPoint(attacker), attacker, current.overtimeNoGoalies())) {
-            Result againstTheWall = maybePassAgainstTheWall(location);
-            if (againstTheWall != null) return againstTheWall;
             Result pass = makePassMaybeTurnBefore(location);
             if (pass != null) return pass;
         }
@@ -299,6 +297,9 @@ public class Solution {
 
     @Nullable
     private Result makePassMaybeTurnBefore(@NotNull Point location) {
+        Result againstTheWall = maybePassAgainstTheWall(location);
+        if (againstTheWall != null) return againstTheWall;
+
         State state = current;
         for (int i = 0; i < 40; i++) {
             Result move = makePassTo(state.me(), location);
