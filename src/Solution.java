@@ -73,7 +73,7 @@ public class Solution {
 
         if (world.getMyPlayer().isJustScoredGoal() || world.getMyPlayer().isJustMissedGoal()) {
             Result substitute = substitute();
-            return substitute != null ? substitute : new Result(Do.NOTHING, goTo(Static.CENTER));
+            return substitute != null ? substitute : new Result(hitEnemyIfReachable(), goTo(Static.CENTER));
         }
 
         // If we are swinging, strike or cancel strike or continue swinging
@@ -375,7 +375,7 @@ public class Solution {
             return new Result(Do.substitute(Util.findRestingAllyWithMaxStamina(world).getTeammateIndex()), Go.NOWHERE);
         }
 
-        return new Result(Do.NOTHING, goTo(Point.of((Static.CENTER.x + Players.me.getNetFront()) / 2, 0)));
+        return new Result(hitEnemyIfReachable(), goTo(Point.of((Static.CENTER.x + Players.me.getNetFront()) / 2, 0)));
     }
 
     @Nullable
@@ -407,7 +407,7 @@ public class Solution {
             return new Result(Do.STRIKE, goToPuck());
         }
 
-        return new Result(Do.NOTHING, goToPuck());
+        return new Result(hitEnemyIfReachable(), goToPuck());
     }
 
     @Nullable
@@ -439,7 +439,9 @@ public class Solution {
 
     @NotNull
     private Do takeOrStrikePuckIfReachable() {
-        if (me.cooldown > 0 || !isReachable(me, puck)) return Do.NOTHING;
+        if (me.cooldown > 0) return Do.NOTHING;
+
+        if (!isReachable(me, puck)) return hitEnemyIfReachable();
 
         if (Util.takeFreePuckProbability(me, puck) > TAKE_FREE_PUCK_MINIMUM_PROBABILITY) return Do.TAKE_PUCK;
 
@@ -453,6 +455,18 @@ public class Solution {
         }
 
         return Do.STRIKE;
+    }
+
+    @NotNull
+    private Do hitEnemyIfReachable() {
+        if (puckOwner != null && puckOwner.id() == me.id()) return Do.NOTHING;
+        for (HockeyistPosition ally : current.allies()) {
+            if (isReachable(me, ally)) return Do.NOTHING;
+        }
+        for (HockeyistPosition enemy : current.enemies()) {
+            if (isReachable(me, enemy)) return Do.STRIKE;
+        }
+        return Do.NOTHING;
     }
 
     @NotNull
@@ -671,11 +685,11 @@ public class Solution {
                 state = state.moveAllNoCollisions(Go.go(0, Util.normalize(angle - state.me().angle)), Go.NOWHERE);
             }
             if (state.me().distance(target) < 20) {
-                return new Result(Do.NOTHING, fullBack > 0 ? Go.go(-1, 0) : Go.go(0, Util.normalize(angle - me.angle)));
+                return new Result(hitEnemyIfReachable(), fullBack > 0 ? Go.go(-1, 0) : Go.go(0, Util.normalize(angle - me.angle)));
             }
         }
 
-        return new Result(Do.NOTHING, goTo(target));
+        return new Result(hitEnemyIfReachable(), goTo(target));
     }
 
     @Override
