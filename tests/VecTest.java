@@ -48,6 +48,6 @@ public class VecTest extends TestCase {
     }
 
     private static void assertEq(double expected, double actual) {
-        TestUtil.assertEq(expected, actual, 1e-9);
+        TestUtil.assertEq(expected, actual, 1e-7);
     }
 }
