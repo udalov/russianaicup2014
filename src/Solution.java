@@ -395,7 +395,18 @@ public class Solution {
     @NotNull
     private Do takeOrStrikePuckIfReachable() {
         if (me.cooldown > 0 || !isReachable(me, puck)) return Do.NOTHING;
+
         if (Util.takeFreePuckProbability(me, puck) > TAKE_FREE_PUCK_MINIMUM_PROBABILITY) return Do.TAKE_PUCK;
+
+        // Don't score own goals
+        Vec direction = me.direction();
+        if (direction.innerProduct(Players.defense) > 0) {
+            if (signum(direction.crossProduct(Vec.of(me.point, Players.myBottomCorner))) !=
+                signum(direction.crossProduct(Vec.of(me.point, Players.myTopCorner)))) {
+                return Do.TAKE_PUCK;
+            }
+        }
+        
         return Do.STRIKE;
     }
 

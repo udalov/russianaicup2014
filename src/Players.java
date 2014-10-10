@@ -15,6 +15,9 @@ public class Players {
     public static Point myGoalCenter;
     public static Point opponentGoalCenter;
 
+    public static Point myBottomCorner;
+    public static Point myTopCorner;
+
     public static Point opponentBottomCorner;
     public static Point opponentBottomGoalPoint;
     public static Point opponentTopCorner;
@@ -36,6 +39,9 @@ public class Players {
 
         myGoalCenter = Point.of(me.getNetFront(), (me.getNetTop() + me.getNetBottom()) / 2);
         opponentGoalCenter = Point.of(opponent.getNetFront(), (opponent.getNetTop() + opponent.getNetBottom()) / 2);
+
+        myBottomCorner = Point.of(me.getNetFront(), me.getNetBottom());
+        myTopCorner = Point.of(me.getNetFront(), me.getNetTop());
 
         opponentBottomCorner = Point.of(opponent.getNetFront(), opponent.getNetBottom());
         opponentBottomGoalPoint = Point.of(opponent.getNetFront(), opponent.getNetBottom() - Static.PUCK_RADIUS - Solution.GOAL_POINT_SHIFT);

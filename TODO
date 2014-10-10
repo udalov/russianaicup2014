@@ -1,13 +1,16 @@
 Critical
 
+- attacker going forward just passes by most of the time
+- volley to make pass against the wall
+
 Major
 
 - defender should not come out if any other ally is closer
+- defender should stand facing the puck as quickly as possible, maybe far from the defense point
 - pass only if it's safe
 - improve behavior with puck near the enemy goal
 - in the beginning, make a pass to the defender
 - strike opponents when necessary
-- volley to make pass against the wall
 
 Normal
 
