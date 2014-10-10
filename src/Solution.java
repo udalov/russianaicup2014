@@ -303,9 +303,14 @@ public class Solution {
     private static double shootAgainstTheWallBestDistance(@NotNull State state, @NotNull Point location) {
         PuckPosition puck = state.puck.strike(state.me(), 0);
         double bestDistance = Double.MAX_VALUE;
-        for (int i = 0; i < 50; i++) {
+        for (int i = 0; i < 70; i++) {
             puck = puck.move();
-            double cur = puck.distance(location);
+            Point point = puck.point;
+            if (Const.goalNetTop - 100 <= point.y && point.y <= Const.goalNetTop + Const.goalNetHeight + 100 &&
+                min(abs(point.x - Players.opponent.getNetFront()), abs(point.x - Players.me.getNetFront())) < 80) {
+                break;
+            }
+            double cur = point.distance(location);
             if (cur < bestDistance) {
                 bestDistance = cur;
             }
