@@ -3,6 +3,10 @@ import model.Hockeyist;
 import model.HockeyistState;
 import model.World;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 import static java.lang.StrictMath.*;
 
 public class Solution {
@@ -14,6 +18,8 @@ public class Solution {
     public static final double TAKE_FREE_PUCK_MINIMUM_PROBABILITY = 0.8;
     public static final double ACCEPTABLE_PROBABILITY_TO_SCORE = 0.8;
     public static final double ALLOWED_ANGLE_FOR_GOING_WITH_FULL_SPEED = 2 * Const.hockeyistTurnAngleFactor;
+    public static final double MINIMUM_ALLOWED_PASS_SAFETY = 120;
+    public static final double MINIMUM_ALLOWED_WALL_PASS_SAFETY = 80;
 
     public static final boolean DEBUG_DO_NOTHING_UNTIL_ENEMY_MIDFIELD_MOVES = false;
 
@@ -183,8 +189,19 @@ public class Solution {
             return new Result(Do.NOTHING, best);
         }
 
+        if (abs(me.point.x - Players.opponentGoalCenter.x) - abs(me.point.x - Players.myGoalCenter.x) > 200) {
+            Point target1 = Point.of(Static.CENTER.x, Const.rinkTop + 50);
+            Point target2 = Point.of(Static.CENTER.x, Const.rinkBottom - 50);
+            double value1 = 0;
+            double value2 = 0;
+            for (HockeyistPosition enemy : current.enemies()) {
+                value1 += enemy.distance(target1);
+                value2 += enemy.distance(target2);
+            }
+            return new Result(Do.NOTHING, naiveGoTo(value1 > value2 ? target1 : target2));
+        }
+
         // TODO: (!) improve
-        // TODO: (!) check which trajectory is safest
         Point target = Point.of(
                 Players.opponent.getNetFront() - Players.attack.x * 300,
                 me.point.y > Static.CENTER.y ? Static.CENTER.y + 200 : Static.CENTER.y - 200
@@ -278,12 +295,13 @@ public class Solution {
             }
         }
 
-        return bestDistance < PASS_AGAINST_THE_WALL_ACCEPTABLE_DISTANCE ? new Result(Do.NOTHING, best) : null;
+        return bestDistance < PASS_AGAINST_THE_WALL_ACCEPTABLE_DISTANCE &&
+               passSafety(Vec.of(current.puck.point, location).angleTo(me.direction())) > MINIMUM_ALLOWED_WALL_PASS_SAFETY ?
+               new Result(Do.NOTHING, best) : null;
     }
 
     private static double shootAgainstTheWallBestDistance(@NotNull State state, @NotNull Point location) {
-        Vec struckPuckVelocity = state.me().direction().multiply(effectiveShotPower(0) * Const.struckPuckInitialSpeedFactor * state.me().strength());
-        PuckPosition puck = new PuckPosition(state.puck.puck, state.puck.point, struckPuckVelocity);
+        PuckPosition puck = state.puck.strike(state.me(), 0);
         double bestDistance = Double.MAX_VALUE;
         for (int i = 0; i < 50; i++) {
             puck = puck.move();
@@ -295,6 +313,33 @@ public class Solution {
         return bestDistance;
     }
 
+    private static final double[] BUF = new double[3];
+
+    private double passSafety(double angle) {
+        PuckPosition puck = this.puck.strike(me, angle);
+        List<HockeyistPosition> enemies = new ArrayList<>(3);
+        for (HockeyistPosition enemy : current.enemies()) enemies.add(enemy);
+        int n = enemies.size();
+        double[] minDist = BUF;
+        Arrays.fill(minDist, 100000);
+        for (int i = 0; i < 40; i++) {
+            puck = puck.move();
+            if ((i & 3) == 3) {
+                for (int j = 0; j < n; j++) {
+                    HockeyistPosition enemy = enemies.get(j);
+                    if (enemy.cooldown - i <= 0) {
+                        minDist[j] = min(minDist[j], puck.distance(Util.puckBindingPoint(enemy)));
+                    }
+                }
+            }
+        }
+        double average = 0;
+        for (double dist : minDist) {
+            average += 1 / dist;
+        }
+        return n / average;
+    }
+
     @Nullable
     private Result makePassMaybeTurnBefore(@NotNull Point location) {
         Result againstTheWall = maybePassAgainstTheWall(location);
@@ -304,8 +349,7 @@ public class Solution {
         for (int i = 0; i < 40; i++) {
             Result move = makePassTo(state.me(), location);
             if (move.action.type == ActionType.PASS) {
-                // TODO: check if it's safe
-                return makePassTo(me, location);
+                if (passSafety(move.action.passAngle) > MINIMUM_ALLOWED_PASS_SAFETY) return makePassTo(me, location);
             }
             state = state.moveAllNoCollisions(move.direction, Go.NOWHERE);
         }
@@ -407,7 +451,7 @@ public class Solution {
                 return Do.TAKE_PUCK;
             }
         }
-        
+
         return Do.STRIKE;
     }
 

@@ -1,5 +1,7 @@
 import model.Puck;
 
+import static java.lang.StrictMath.abs;
+
 public class PuckPosition extends Position {
     private static final double PUCK_FRICTION = 0.999;
     private static final double DAMPING = 0.25;
@@ -50,6 +52,14 @@ public class PuckPosition extends Position {
     @NotNull
     public PuckPosition inFrontOf(@NotNull HockeyistPosition position) {
         return new PuckPosition(puck, Util.puckBindingPoint(position), position.velocity);
+    }
+
+    @NotNull
+    // Strike without any swing or pass with maximum power
+    public PuckPosition strike(@NotNull HockeyistPosition striker, double angle) {
+        Vec direction = abs(angle) < 1e-4 ? striker.direction() : Vec.of(Util.normalize(striker.angle + angle));
+        Vec struckPuckVelocity = direction.multiply(Const.strikePowerBaseFactor * Const.struckPuckInitialSpeedFactor * striker.strength());
+        return new PuckPosition(puck, point, struckPuckVelocity);
     }
 
     @Override
