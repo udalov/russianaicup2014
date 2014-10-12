@@ -18,44 +18,39 @@ public class State {
     public final PuckPosition puck;
     public final int myIndex;
     public final int puckOwnerIndex;
+    public final double goalieY; // if goalieY < 0, there are no goalies
 
-    public State(@NotNull HockeyistPosition[] pos, @NotNull PuckPosition puck, int myIndex, int puckOwnerIndex) {
+    public State(@NotNull HockeyistPosition[] pos, @NotNull PuckPosition puck, int myIndex, int puckOwnerIndex, double goalieY) {
         this.pos = pos;
         this.puck = puck;
         this.myIndex = myIndex;
         this.puckOwnerIndex = puckOwnerIndex;
+        this.goalieY = goalieY;
     }
 
     @NotNull
     public static State of(@NotNull Hockeyist self, @NotNull World world) {
-        List<HockeyistPosition> positions = new ArrayList<>(9);
+        List<HockeyistPosition> positions = new ArrayList<>(6);
         int myIndex = -1;
         int puckOwnerIndex = -1;
+        double goalieY = -1;
         for (Hockeyist hockeyist : world.getHockeyists()) {
             if (hockeyist.getState() == HockeyistState.RESTING) continue;
+            if (hockeyist.getType() == HockeyistType.GOALIE) {
+                goalieY = hockeyist.getY();
+                continue;
+            }
             if (hockeyist.getId() == self.getId()) myIndex = positions.size();
             if (hockeyist.getId() == world.getPuck().getOwnerHockeyistId()) puckOwnerIndex = positions.size();
             positions.add(HockeyistPosition.of(hockeyist));
         }
         assert myIndex >= 0 : "No self: " + Arrays.toString(world.getHockeyists());
         return new State(positions.toArray(new HockeyistPosition[positions.size()]), PuckPosition.of(world.getPuck()),
-                         myIndex, puckOwnerIndex);
-    }
-
-    @Nullable
-    public Point enemyGoalie() {
-        long opponentId = Players.opponent.getId();
-        for (HockeyistPosition position : pos) {
-            Hockeyist hockeyist = position.hockeyist;
-            if (hockeyist.getPlayerId() == opponentId && hockeyist.getType() == HockeyistType.GOALIE) {
-                return position.point;
-            }
-        }
-        return null;
+                         myIndex, puckOwnerIndex, goalieY);
     }
 
     public boolean overtimeNoGoalies() {
-        return enemyGoalie() == null;
+        return goalieY < 0;
     }
 
     @Nullable
@@ -121,7 +116,7 @@ public class State {
         PuckPosition newPuck = null;
         int n = positions.length;
         for (int i = 0; i < n; i++) {
-            positions[i] = moveSingleHockeyist(positions[i], i == myIndex ? go : DEFAULT_HOCKEYIST_DIRECTION);
+            positions[i] = positions[i].move(i == myIndex ? go : DEFAULT_HOCKEYIST_DIRECTION);
             if (i == puckOwnerIndex) {
                 newPuck = puck.inFrontOf(positions[i]);
                 // TODO: improve collisions of puck owner with walls
@@ -160,16 +155,17 @@ public class State {
             newPuck = puck.move();
         }
 
-        return new State(positions, newPuck, myIndex, puckOwnerIndex);
+        return new State(positions, newPuck, myIndex, puckOwnerIndex, moveGoalie());
     }
 
     @NotNull
     public State apply(@NotNull Go myDirection, @NotNull Go othersDirection) {
         HockeyistPosition[] positions = Arrays.copyOf(pos, pos.length);
         for (int i = 0, n = positions.length; i < n; i++) {
-            positions[i] = moveSingleHockeyist(positions[i], i == myIndex ? myDirection : othersDirection);
+            positions[i] = positions[i].move(i == myIndex ? myDirection : othersDirection);
         }
-        return new State(positions, puckOwnerIndex == -1 ? puck.move() : puck.inFrontOf(positions[puckOwnerIndex]), myIndex, puckOwnerIndex);
+        return new State(positions, puckOwnerIndex == -1 ? puck.move() : puck.inFrontOf(positions[puckOwnerIndex]), myIndex,
+                         puckOwnerIndex, moveGoalie());
     }
 
     @NotNull
@@ -177,18 +173,11 @@ public class State {
         return apply(go, DEFAULT_HOCKEYIST_DIRECTION);
     }
 
-    @NotNull
-    private HockeyistPosition moveSingleHockeyist(@NotNull HockeyistPosition position, @NotNull Go go) {
-        if (position.hockeyist.getType() == HockeyistType.GOALIE) {
-            double puckY = puck.point.y;
-            double goalieY = position.point.y;
-            double newY = max(min(
-                    goalieY + max(min(puckY - goalieY, Const.goalieMaxSpeed), -Const.goalieMaxSpeed),
-                    Const.goalNetTop + Const.goalNetHeight - Static.HOCKEYIST_RADIUS
-            ), Const.goalNetTop + Static.HOCKEYIST_RADIUS);
-            return new HockeyistPosition(position.hockeyist, Point.of(position.point.x, newY), Vec.ZERO, 0, 0, 0);
-        }
-        return position.move(go);
+    private double moveGoalie() {
+        return max(min(
+                goalieY + max(min(puck.point.y - goalieY, Const.goalieMaxSpeed), -Const.goalieMaxSpeed),
+                Const.goalNetTop + Const.goalNetHeight - Static.HOCKEYIST_RADIUS
+        ), Const.goalNetTop + Static.HOCKEYIST_RADIUS);
     }
 
     private static boolean isOutsideRink(@NotNull Position position, double radius) {

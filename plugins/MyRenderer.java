@@ -80,7 +80,6 @@ public class MyRenderer {
         if (puckOwner == null || puckOwner.getPlayerId() != Players.me.getId()) return;
 
         HockeyistPosition me = State.of(puckOwner, world).me();
-        double goalieX = Players.opponentGoalCenter.x - Static.HOCKEYIST_RADIUS;
 
         save();
         for (int x = (int) Static.CENTER.x + 2; x <= Const.rinkRight; x += 4) {
@@ -90,7 +89,7 @@ public class MyRenderer {
                 Point myLocation = puck.shift(direction.multiply(-Const.puckBindingRange));
                 HockeyistPosition attacker =
                         new HockeyistPosition(me.hockeyist, myLocation, me.velocity, 0, direction.angle(), 0);
-                float p = (float) Solution.probabilityToScore(1, attacker.direction(), Point.of(goalieX, max(min(y, 530), 390)), puck, attacker);
+                float p = (float) Solution.probabilityToScore(1, attacker.direction(), max(min(y, 530), 390), puck, attacker);
                 //noinspection ConstantConditions
                 if (PROBABILITY_TO_SCORE_THRESHOLD != null) {
                     p = p > PROBABILITY_TO_SCORE_THRESHOLD ? 1 : 0;
