@@ -142,7 +142,7 @@ public class Solution {
         for (Go go : current.iteratePossibleMoves(8)) {
             State state = current;
             for (int i = 0; i < 35; i++) {
-                state = state.moveAllNoCollisions(i < 10 ? go : Go.NOWHERE, Go.NOWHERE);
+                state = state.apply(i < 10 ? go : Go.NOWHERE);
                 if (permissionToShoot(i - 10 >= 10 ? i - 10 : 0, state) || canScoreWithPass(state)) {
                     return new Result(Do.NOTHING, go);
                 }
@@ -154,7 +154,7 @@ public class Solution {
         firstMove: for (Go firstMove : current.iteratePossibleMoves(8)) {
             State state = current;
             for (int i = 0; i < 20 && i < bestTick - 3; i++) {
-                state = state.moveAllNoCollisions(firstMove, Go.NOWHERE);
+                state = state.apply(firstMove);
                 if (permissionToShoot(0, state) || canScoreWithPass(state)) {
                     best = firstMove;
                     bestTick = i;
@@ -167,7 +167,7 @@ public class Solution {
                 if (firstMove.speedup * secondMove.speedup < 0) break;
                 State next = state;
                 for (int i = 20; i < 40 && i < bestTick - 3; i++) {
-                    next = next.moveAllNoCollisions(secondMove, Go.NOWHERE);
+                    next = next.apply(secondMove);
                     if (permissionToShoot(0, next) || canScoreWithPass(next)) {
                         best = firstMove;
                         bestTick = i;
@@ -175,7 +175,7 @@ public class Solution {
                     }
                 }
                 for (int i = 40; i < 55 && i < bestTick - 3; i++) {
-                    next = next.moveAllNoCollisions(Go.NOWHERE, Go.NOWHERE);
+                    next = next.apply(Go.NOWHERE);
                     if (permissionToShoot(i - 40 >= 10 ? i - 40 : 0, next) || canScoreWithPass(next)) {
                         best = firstMove;
                         bestTick = i;
@@ -215,7 +215,7 @@ public class Solution {
             for (Go go : current.iteratePossibleMoves(4)) {
                 State state = current;
                 for (int i = 0; i < 60; i++) {
-                    state = state.moveAllNoCollisions(i < ticks ? go : Go.NOWHERE, Go.NOWHERE);
+                    state = state.apply(i < ticks ? go : Go.NOWHERE);
                     int swingTicks = i - ticks >= 10 ? i - ticks : 0;
                     if (isReachable(state.me(), state.puck) && permissionToShoot(swingTicks, state)) {
                         return new Result(Do.NOTHING, go);
@@ -285,7 +285,7 @@ public class Solution {
         for (Go go : current.iteratePossibleMoves(8)) {
             State state = current;
             for (int i = 0; i < TICKS_TO_CONSIDER_PASS_AGAINST_THE_WALL; i++) {
-                state = state.moveAllNoCollisions(go, Go.NOWHERE);
+                state = state.apply(go);
                 if (state.me().cooldown > 0) continue;
                 double cur = shootAgainstTheWallBestDistance(state, location);
                 if (cur < bestDistance) {
@@ -356,7 +356,7 @@ public class Solution {
             if (move.action.type == ActionType.PASS) {
                 if (passSafety(move.action.passAngle) > MINIMUM_ALLOWED_PASS_SAFETY) return makePassTo(me, location);
             }
-            state = state.moveAllNoCollisions(move.direction, Go.NOWHERE);
+            state = state.apply(move.direction);
         }
         return null;
     }
@@ -422,7 +422,7 @@ public class Solution {
         // If I won't be going anywhere but rather will turn to the desired angle, will any enemy obtain the puck before me?
         for (int i = 0; i < 60; i++) {
             Go go = finalAngleMatters ? Go.go(0, Util.normalize(desiredAngle - state.me().angle)) : Go.NOWHERE;
-            state = state.moveAllNoCollisions(go, Go.go(1, 0));
+            state = state.apply(go, Go.go(1, 0));
             for (HockeyistPosition enemy : state.enemies()) {
                 if (isReachable(enemy, state.puck)) return null;
             }
@@ -480,7 +480,7 @@ public class Solution {
         if (swingTicks < Const.swingActionCooldownTicks || me.cooldown > 0) return Do.SWING;
 
         if (isReachable(me, puck)) {
-            State nextTurn = current.apply(Go.NOWHERE);
+            State nextTurn = current.applyWithCollisions(Go.NOWHERE);
             for (HockeyistPosition enemy : nextTurn.enemies()) {
                 if (isReachable(enemy, nextTurn.puck) || isReachable(enemy, nextTurn.me())) return Do.STRIKE;
             }
@@ -499,7 +499,7 @@ public class Solution {
     private static boolean shouldStartSwinging(@NotNull State current) {
         State state = current;
         for (int i = 0; i < Const.swingActionCooldownTicks; i++) {
-            state = state.moveAllNoCollisions(Go.NOWHERE, Go.NOWHERE);
+            state = state.apply(Go.NOWHERE);
         }
         return (isReachable(state.me(), state.puck) && permissionToShoot(Const.swingActionCooldownTicks, state)) ||
                continueSwinging(state, Const.swingActionCooldownTicks);
@@ -507,7 +507,7 @@ public class Solution {
 
     private static boolean continueSwinging(@NotNull State state, int swingTicks) {
         for (int i = swingTicks; i < MAXIMUM_TICKS_TO_SWING; i++) {
-            state = state.moveAllNoCollisions(Go.NOWHERE, Go.NOWHERE);
+            state = state.apply(Go.NOWHERE);
             if (isReachable(state.me(), state.puck) && permissionToShoot(i, state)) return true;
         }
         return false;
@@ -573,7 +573,7 @@ public class Solution {
             for (Go go : current.iteratePossibleMoves(4)) {
                 State state = current;
                 for (int i = 0; i < 60 && i < bestFirstTickToReach; i++) {
-                    state = state.moveAllNoCollisions(i < ticks ? go : Go.NOWHERE, puckOwnerDirection);
+                    state = state.apply(i < ticks ? go : Go.NOWHERE, puckOwnerDirection);
                     if (isReachable(state.me(), state.puck)) {
                         bestFirstTickToReach = i;
                         bestGo = go;
@@ -684,10 +684,10 @@ public class Solution {
         for (int fullBack = 0; fullBack <= 50; fullBack += 10) {
             State state = current;
             for (int i = 0; i < fullBack; i++) {
-                state = state.moveAllNoCollisions(Go.go(-1, 0), Go.NOWHERE);
+                state = state.apply(Go.go(-1, 0));
             }
             while (state.me().velocity.length() > 0.1) {
-                state = state.moveAllNoCollisions(Go.go(0, Util.normalize(angle - state.me().angle)), Go.NOWHERE);
+                state = state.apply(Go.go(0, Util.normalize(angle - state.me().angle)));
             }
             if (state.me().distance(target) < 20) {
                 return new Result(hitEnemyIfReachable(), fullBack > 0 ? Go.go(-1, 0) : Go.go(0, Util.normalize(angle - me.angle)));

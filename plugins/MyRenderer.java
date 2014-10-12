@@ -109,7 +109,7 @@ public class MyRenderer {
         State current = State.of(puckOwner != null ? puckOwner : world.getHockeyists()[0], world);
         State state = current;
         for (int i = 0; i < FUTURE_STEPS_TO_APPLY; i++) {
-            state = state.apply(Go.NOWHERE);
+            state = state.applyWithCollisions(Go.NOWHERE);
         }
         System.out.println(world + " real " + current.puck + " forecast " + state.puck);
 

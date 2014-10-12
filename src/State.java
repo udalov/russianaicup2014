@@ -116,7 +116,7 @@ public class State {
     }
 
     @NotNull
-    public State apply(@NotNull Go go) {
+    public State applyWithCollisions(@NotNull Go go) {
         HockeyistPosition[] positions = Arrays.copyOf(pos, pos.length);
         PuckPosition newPuck = null;
         int n = positions.length;
@@ -164,12 +164,17 @@ public class State {
     }
 
     @NotNull
-    public State moveAllNoCollisions(@NotNull Go myDirection, @NotNull Go othersDirection) {
+    public State apply(@NotNull Go myDirection, @NotNull Go othersDirection) {
         HockeyistPosition[] positions = Arrays.copyOf(pos, pos.length);
         for (int i = 0, n = positions.length; i < n; i++) {
             positions[i] = moveSingleHockeyist(positions[i], i == myIndex ? myDirection : othersDirection);
         }
         return new State(positions, puckOwnerIndex == -1 ? puck.move() : puck.inFrontOf(positions[puckOwnerIndex]), myIndex, puckOwnerIndex);
+    }
+
+    @NotNull
+    public State apply(@NotNull Go go) {
+        return apply(go, DEFAULT_HOCKEYIST_DIRECTION);
     }
 
     @NotNull
