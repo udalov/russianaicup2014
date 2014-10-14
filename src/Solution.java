@@ -559,26 +559,26 @@ public class Solution {
     private Go goToPuck() {
         // TODO: (!) improve this heuristic
 
-        // If the puck is owned by someone, simulate the world as if the owner is bound to the puck which moves freely
-        // (v + |v|*x) * 0.98 = v
-        // 0.98v + 0.98|v|x = v
-        // x = 0.02/0.98
-        Go puckOwnerDirection = puckOwner != null ? Go.go(0.02 / 0.98, 0) : Go.NOWHERE;
+        PuckPosition[] puckPos = new PuckPosition[60];
+        puckPos[0] = current.puck.move();
+        for (int i = 1; i < puckPos.length; i++) {
+            puckPos[i] = puckPos[i - 1].move();
+        }
 
         Go bestGo = null;
         int bestFirstTickToReach = Integer.MAX_VALUE;
         double bestDistance = Double.MAX_VALUE;
         for (int ticks = 10; ticks <= 60; ticks += 10) {
             for (Go go : current.iteratePossibleMoves(4)) {
-                State state = current;
+                HockeyistPosition me = current.me;
                 for (int i = 0; i < 60 && i < bestFirstTickToReach; i++) {
-                    state = state.apply(i < ticks ? go : Go.NOWHERE, puckOwnerDirection);
-                    if (isReachable(state.me, state.puck)) {
+                    me = me.move(i < ticks ? go : Go.NOWHERE);
+                    if (isReachable(me, puckPos[i])) {
                         bestFirstTickToReach = i;
                         bestGo = go;
                         break;
                     } else if (bestFirstTickToReach == Integer.MAX_VALUE) {
-                        double cur = Util.puckBindingPoint(state.me).distance(state.puck.point);
+                        double cur = Util.puckBindingPoint(me).distance(puckPos[i].point);
                         if (cur < bestDistance) {
                             bestDistance = cur;
                             bestGo = go;
