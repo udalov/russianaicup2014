@@ -9,8 +9,6 @@ import static java.lang.StrictMath.max;
 import static java.lang.StrictMath.min;
 
 public class State {
-    public static final Go DEFAULT_HOCKEYIST_DIRECTION = Go.NOWHERE;
-
     public final HockeyistPosition[] pos;
     public final HockeyistPosition me;
     public final PuckPosition puck;
@@ -120,49 +118,6 @@ public class State {
     }
 
     @NotNull
-    public State applyWithCollisions(@NotNull Go go) {
-        int n = pos.length;
-        HockeyistPosition[] newPos = new HockeyistPosition[n];
-        for (int i = 0; i < n; i++) {
-            HockeyistPosition newPosition = pos[i].move(DEFAULT_HOCKEYIST_DIRECTION);
-            if (i != puckOwnerIndex && isOutsideRink(newPosition, Static.HOCKEYIST_RADIUS)) {
-                // TODO: improve collisions of hockeyists with walls
-                newPos[i] = pos[i];
-            } else {
-                newPos[i] = newPosition;
-            }
-        }
-
-        HockeyistPosition newMe = me.move(go);
-        if (puckOwnerIndex != -2 && isOutsideRink(newMe, Static.HOCKEYIST_RADIUS)) {
-            // TODO: improve collisions of self with walls
-            newMe = me;
-        }
-
-        PuckPosition newPuck;
-        if (puckOwnerIndex != -1) {
-            HockeyistPosition newPuckOwner = puckOwnerIndex == -2 ? newMe : newPos[puckOwnerIndex];
-            newPuck = puck.inFrontOf(newPuckOwner);
-            // TODO: improve collisions of puck owner with walls
-            if (isOutsideRink(newPuck, Static.PUCK_RADIUS) || isOutsideRink(newPuckOwner, Static.HOCKEYIST_RADIUS)) {
-                newPuck = puck;
-                if (puckOwnerIndex != -2) {
-                    newPos[puckOwnerIndex] = puckOwner();
-                } else {
-                    newMe = me;
-                }
-            }
-        } else {
-            // TODO: support collisions of puck with goalies
-            newPuck = puck.move();
-        }
-
-        // TODO: support collisions of hockeyists
-
-        return new State(newPos, newMe, newPuck, puckOwnerIndex, moveGoalie());
-    }
-
-    @NotNull
     public State apply(@NotNull Go myDirection, @NotNull Go othersDirection) {
         int n = pos.length;
         HockeyistPosition[] newPos = new HockeyistPosition[n];
@@ -190,14 +145,6 @@ public class State {
                 goalieY + max(min(puck.point.y - goalieY, Const.goalieMaxSpeed), -Const.goalieMaxSpeed),
                 Const.goalNetTop + Const.goalNetHeight - Static.HOCKEYIST_RADIUS
         ), Const.goalNetTop + Static.HOCKEYIST_RADIUS);
-    }
-
-    private static boolean isOutsideRink(@NotNull Position position, double radius) {
-        Point point = position.point;
-        return point.x - Const.rinkLeft < radius ||
-               Const.rinkRight - point.x < radius ||
-               point.y - Const.rinkTop < radius ||
-               Const.rinkBottom - point.y < radius;
     }
 
     @Override

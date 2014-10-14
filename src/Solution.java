@@ -20,6 +20,8 @@ public class Solution {
     public static final double ALLOWED_ANGLE_FOR_GOING_WITH_FULL_SPEED = 2 * Const.hockeyistTurnAngleFactor;
     public static final double MINIMUM_ALLOWED_PASS_SAFETY = 120;
     public static final double MINIMUM_ALLOWED_WALL_PASS_SAFETY = 80;
+    public static final int TICKS_TO_CONSIDER_PASS_AGAINST_THE_WALL = 15;
+    public static final double PASS_AGAINST_THE_WALL_ACCEPTABLE_DISTANCE = 80;
 
     public static final boolean DEBUG_DO_NOTHING_UNTIL_ENEMY_MIDFIELD_MOVES = false;
 
@@ -40,8 +42,6 @@ public class Solution {
     private final HockeyistPosition puckOwner;
 
     private final Decision decision;
-    public static final int TICKS_TO_CONSIDER_PASS_AGAINST_THE_WALL = 15;
-    public static final double PASS_AGAINST_THE_WALL_ACCEPTABLE_DISTANCE = 80;
 
     public Solution(@NotNull Team team, @NotNull Hockeyist self, @NotNull World world) {
         this.team = team;
@@ -480,7 +480,7 @@ public class Solution {
         if (swingTicks < Const.swingActionCooldownTicks || me.cooldown > 0) return Do.SWING;
 
         if (isReachable(me, puck)) {
-            State nextTurn = current.applyWithCollisions(Go.NOWHERE);
+            State nextTurn = current.apply(Go.NOWHERE);
             for (HockeyistPosition enemy : nextTurn.enemies()) {
                 if (isReachable(enemy, nextTurn.puck) || isReachable(enemy, nextTurn.me)) return Do.STRIKE;
             }
