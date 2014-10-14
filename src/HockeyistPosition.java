@@ -49,14 +49,6 @@ public class HockeyistPosition extends Position {
         return Util.normalize(atan2(y - point.y, x - point.x) - angle);
     }
 
-    public long id() {
-        return hockeyist.getId();
-    }
-
-    public boolean teammate() {
-        return hockeyist.getPlayerId() == Players.me.getId();
-    }
-
     // TODO: store stamina and recalculate attributes with it
 
     public double strength() {

@@ -36,6 +36,10 @@ public class Util {
         return angle;
     }
 
+    public static double angle(@NotNull Point from, @NotNull Point to) {
+        return atan2(to.y - from.y, to.x - from.x);
+    }
+
     public static double speed(@NotNull Unit unit) {
         return hypot(unit.getSpeedX(), unit.getSpeedY());
     }

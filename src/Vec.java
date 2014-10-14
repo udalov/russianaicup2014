@@ -4,8 +4,6 @@ import static java.lang.StrictMath.abs;
 import static java.lang.StrictMath.atan2;
 
 public class Vec {
-    public static final Vec ZERO = Vec.of(0, 0);
-
     public static final Vec UP = Vec.of(0, -1);
     public static final Vec DOWN = Vec.of(0, 1);
 
@@ -53,18 +51,8 @@ public class Vec {
     }
 
     @NotNull
-    public Vec minus(@NotNull Vec other) {
-        return new Vec(x - other.x, y - other.y);
-    }
-
-    @NotNull
     public Vec multiply(double k) {
         return new Vec(x * k, y * k);
-    }
-
-    @NotNull
-    public Vec divide(double k) {
-        return new Vec(x / k, y / k);
     }
 
     public double length() {
@@ -73,7 +61,8 @@ public class Vec {
 
     @NotNull
     public Vec normalize() {
-        return abs(length()) < 1e-9 ? this : divide(length());
+        double length = length();
+        return abs(length) < 1e-9 ? this : multiply(1 / length);
     }
 
     @NotNull
@@ -82,7 +71,7 @@ public class Vec {
     }
 
     public double projection(@NotNull Vec other) {
-        return this.innerProduct(other) / other.length();
+        return innerProduct(other) / other.length();
     }
 
     public double angle() {

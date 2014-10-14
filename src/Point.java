@@ -1,8 +1,6 @@
 import model.Unit;
 
 public class Point {
-    public static final Point ZERO = Point.of(0, 0);
-
     public final double x;
     public final double y;
 

@@ -37,6 +37,7 @@ public class Solution {
     private final World world;
     private final long puckOwnerId;
     private final boolean puckOwnerIsTeammate;
+    private final long myId;
 
     private final State current;
     private final HockeyistPosition me;
@@ -50,12 +51,13 @@ public class Solution {
         this.world = world;
         this.puckOwnerId = world.getPuck().getOwnerHockeyistId();
         this.puckOwnerIsTeammate = world.getPuck().getOwnerPlayerId() == Players.me.getId();
+        this.myId = self.getId();
 
         this.current = State.of(self, world);
         this.me = current.me;
         this.puck = current.puck;
 
-        this.decision = team.getDecision(me.id());
+        this.decision = team.getDecision(myId);
     }
 
     @NotNull
@@ -63,7 +65,7 @@ public class Solution {
         if (DEBUG_LAND_WITH_ANGLE) {
             if (self.getOriginalPositionIndex() != 0) return Result.NOTHING;
             if (debugTarget != null) {
-                return landWithAngle(debugTarget, Vec.of(debugTarget, debugDirection).angle());
+                return landWithAngle(debugTarget, Util.angle(debugTarget, debugDirection));
             }
             if (DEBUG_LAND_WITH_ANGLE) return Result.NOTHING;
         }
@@ -88,7 +90,7 @@ public class Solution {
         if (shoot != null) return new Result(shoot, Go.NOWHERE);
 
         // If we have the puck, swing/shoot/pass or just go to the attack point
-        if (puckOwnerId == me.id()) {
+        if (puckOwnerId == myId) {
             return withPuck();
         }
 
@@ -232,7 +234,7 @@ public class Solution {
     @Nullable
     private Do maybeShootOrStartSwinging() {
         if (me.cooldown > 0) return null;
-        if (puckOwnerId == me.id() && canScoreWithPass(current)) {
+        if (puckOwnerId == myId && canScoreWithPass(current)) {
             Point target = current.overtimeNoGoalies() ? Players.opponentGoalCenter : Players.opponentDistantGoalPoint(puck.point);
             double correctAngle = Vec.of(puck.point, target).angleTo(me.direction());
             return Do.pass(1, correctAngle);
@@ -252,11 +254,11 @@ public class Solution {
         Point dislocation = decision.dislocation;
         switch (decision.role) {
             case MIDFIELD:
-                return landWithAngle(dislocation, Vec.of(dislocation, puck.point).angle());
+                return landWithAngle(dislocation, Util.angle(dislocation, puck.point));
             case ATTACK:
-                return landWithAngle(dislocation, Vec.of(dislocation, Players.opponentDistantGoalPoint(me.point)).angle());
+                return landWithAngle(dislocation, Util.angle(dislocation, Players.opponentDistantGoalPoint(me.point)));
             case DEFENSE:
-                return landWithAngle(dislocation, Vec.of(dislocation, puck.point).angle());
+                return landWithAngle(dislocation, Util.angle(dislocation, puck.point));
         }
         throw new AssertionError(decision.role);
     }
@@ -375,7 +377,7 @@ public class Solution {
 
     @Nullable
     private Result substitute() {
-        if (!team.timeToRest.contains(me.id())) return null;
+        if (!team.timeToRest.contains(myId)) return null;
 
         if (me.point.y < Const.rinkTop + Const.substitutionAreaHeight &&
             me.distance(Players.myGoalCenter) < me.distance(Players.opponentGoalCenter)) {
@@ -396,7 +398,7 @@ public class Solution {
             // TODO: not puck binding point, but intersection of puck trajectory and our direction
             if (decision.role == Decision.Role.ATTACK &&
                 feasibleLocationToShoot(me.strength(), me.direction(), -1, Util.puckBindingPoint(me), me, current.overtimeNoGoalies())) {
-                wait = waitForPuckToCome(Vec.of(me.point, Players.opponentDistantGoalPoint(me.point)).angle(), true);
+                wait = waitForPuckToCome(Util.angle(me.point, Players.opponentDistantGoalPoint(me.point)), true);
             } else {
                 wait = waitForPuckToCome(me.angle, false);
             }
@@ -440,7 +442,7 @@ public class Solution {
                     return new Result(takeOrStrikePuckIfReachable(), Go.go(0, Util.normalize(desiredAngle - me.angle)));
                 }
             } else {
-                double cur = Util.normalize(Vec.of(state.me, state.puck).angle() - me.angle);
+                double cur = Util.normalize(Util.angle(state.me.point, state.puck.point) - me.angle);
                 if (abs(cur) < abs(best)) {
                     best = cur;
                 }
@@ -472,7 +474,7 @@ public class Solution {
 
     @NotNull
     private Do hitEnemyIfReachable() {
-        if (puckOwnerId == me.id()) return Do.NOTHING;
+        if (puckOwnerId == myId) return Do.NOTHING;
         for (HockeyistPosition ally : current.allies()) {
             if (isReachable(me, ally)) return Do.NOTHING;
         }
@@ -608,7 +610,7 @@ public class Solution {
     @Nullable
     private HockeyistPosition findAlly(@NotNull Decision.Role role) {
         for (HockeyistPosition ally : current.allies()) {
-            if (team.getDecision(ally.id()).role == role) return ally;
+            if (team.getDecision(ally.hockeyist.getId()).role == role) return ally;
         }
         return null;
     }

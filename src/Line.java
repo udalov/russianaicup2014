@@ -20,22 +20,8 @@ public class Line {
         return new Line(A, B, C);
     }
 
-    @NotNull
-    public static Line of(double angle) {
-        return new Line(-Util.fastSin(angle), Util.fastCos(angle), 0);
-    }
-
     public boolean contains(@NotNull Point p) {
         return zero(A * p.x + B * p.y - C);
-    }
-
-    @NotNull
-    public Point at(double x) {
-        if (zero(B)) {
-            System.out.println("warning: at() called on a vertical line " + this);
-        }
-        double y = (C - A * x) / B;
-        return Point.of(x, y);
     }
 
     @NotNull
