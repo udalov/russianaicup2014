@@ -164,7 +164,11 @@ public class State {
 
     @NotNull
     public State apply(@NotNull Go go) {
-        return apply(go, DEFAULT_HOCKEYIST_DIRECTION);
+        HockeyistPosition newMe = me.move(go);
+        PuckPosition newPuck = puckOwnerIndex == -1 ? puck.move() :
+                               puckOwnerIndex == -2 ? puck.inFrontOf(newMe) :
+                               puck;
+        return new State(pos, newMe, newPuck, puckOwnerIndex, moveGoalie());
     }
 
     private double moveGoalie() {
