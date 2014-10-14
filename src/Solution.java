@@ -35,11 +35,12 @@ public class Solution {
     private final Team team;
     private final Hockeyist self;
     private final World world;
+    private final long puckOwnerId;
+    private final boolean puckOwnerIsTeammate;
 
     private final State current;
     private final HockeyistPosition me;
     private final PuckPosition puck;
-    private final HockeyistPosition puckOwner;
 
     private final Decision decision;
 
@@ -47,11 +48,12 @@ public class Solution {
         this.team = team;
         this.self = self;
         this.world = world;
+        this.puckOwnerId = world.getPuck().getOwnerHockeyistId();
+        this.puckOwnerIsTeammate = world.getPuck().getOwnerPlayerId() == Players.me.getId();
 
         this.current = State.of(self, world);
         this.me = current.me;
         this.puck = current.puck;
-        this.puckOwner = current.puckOwner();
 
         this.decision = team.getDecision(me.id());
     }
@@ -86,12 +88,12 @@ public class Solution {
         if (shoot != null) return new Result(shoot, Go.NOWHERE);
 
         // If we have the puck, swing/shoot/pass or just go to the attack point
-        if (puckOwner != null && puckOwner.id() == me.id()) {
+        if (puckOwnerId == me.id()) {
             return withPuck();
         }
 
         // Else if the puck is free or owned by an enemy, try to obtain/volley it
-        if (puckOwner == null || !puckOwner.teammate()) {
+        if (puckOwnerId == -1 || !puckOwnerIsTeammate) {
             // If we can score in several turns, prepare to volley
             Result prepare = prepareForVolley(current);
             if (prepare != null) return prepare;
@@ -230,7 +232,7 @@ public class Solution {
     @Nullable
     private Do maybeShootOrStartSwinging() {
         if (me.cooldown > 0) return null;
-        if (puckOwner != null && puckOwner.id() == me.id() && canScoreWithPass(current)) {
+        if (puckOwnerId == me.id() && canScoreWithPass(current)) {
             Point target = current.overtimeNoGoalies() ? Players.opponentGoalCenter : Players.opponentDistantGoalPoint(puck.point);
             double correctAngle = Vec.of(puck.point, target).angleTo(me.direction());
             return Do.pass(1, correctAngle);
@@ -389,7 +391,7 @@ public class Solution {
         boolean close = distance < 300 || (distance < 400 && puck.velocity.projection(Vec.of(puck, me)) > 2);
         if (!close) return null;
 
-        if (puckOwner == null) {
+        if (puckOwnerId == -1) {
             Result wait;
             // TODO: not puck binding point, but intersection of puck trajectory and our direction
             if (decision.role == Decision.Role.ATTACK &&
@@ -408,11 +410,17 @@ public class Solution {
             if (puck.distance(decision.dislocation) > 200) return null;
         }
 
-        if (isReachable(me, puck) || isReachable(me, puckOwner)) {
-            return new Result(Do.STRIKE, goToPuck());
+        Go direction = goToPuck();
+
+        if (isReachable(me, puck)) {
+            return new Result(Do.STRIKE, direction);
         }
 
-        return new Result(hitEnemyIfReachable(), goToPuck());
+        for (HockeyistPosition enemy : current.enemies()) {
+            if (isReachable(me, enemy)) return new Result(Do.STRIKE, direction);
+        }
+
+        return new Result(Do.NOTHING, direction);
     }
 
     @Nullable
@@ -464,7 +472,7 @@ public class Solution {
 
     @NotNull
     private Do hitEnemyIfReachable() {
-        if (puckOwner != null && puckOwner.id() == me.id()) return Do.NOTHING;
+        if (puckOwnerId == me.id()) return Do.NOTHING;
         for (HockeyistPosition ally : current.allies()) {
             if (isReachable(me, ally)) return Do.NOTHING;
         }
@@ -492,7 +500,7 @@ public class Solution {
 
         if (current.overtimeNoGoalies()) return Do.STRIKE;
 
-        boolean puckIsFreeOrOwnedByEnemy = puckOwner == null || (puckOwner.id() != me.id() && !puckOwner.teammate());
+        boolean puckIsFreeOrOwnedByEnemy = puckOwnerId == -1 || !puckOwnerIsTeammate;
         return puckIsFreeOrOwnedByEnemy || permissionToShoot(swingTicks, current) ? Do.STRIKE : Do.CANCEL_STRIKE;
     }
 

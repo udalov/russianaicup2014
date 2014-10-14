@@ -54,11 +54,6 @@ public class State {
         return goalieY < 0;
     }
 
-    @Nullable
-    public HockeyistPosition puckOwner() {
-        return puckOwnerIndex == -2 ? me : puckOwnerIndex != -1 ? pos[puckOwnerIndex] : null;
-    }
-
     @NotNull
     public Iterable<HockeyistPosition> allies() {
         return filterTeam(true);
