@@ -49,7 +49,7 @@ public class Solution {
         this.world = world;
 
         this.current = State.of(self, world);
-        this.me = current.me();
+        this.me = current.me;
         this.puck = current.puck;
         this.puckOwner = current.puckOwner();
 
@@ -217,7 +217,7 @@ public class Solution {
                 for (int i = 0; i < 60; i++) {
                     state = state.apply(i < ticks ? go : Go.NOWHERE);
                     int swingTicks = i - ticks >= 10 ? i - ticks : 0;
-                    if (isReachable(state.me(), state.puck) && permissionToShoot(swingTicks, state)) {
+                    if (isReachable(state.me, state.puck) && permissionToShoot(swingTicks, state)) {
                         return new Result(Do.NOTHING, go);
                     }
                 }
@@ -286,7 +286,7 @@ public class Solution {
             State state = current;
             for (int i = 0; i < TICKS_TO_CONSIDER_PASS_AGAINST_THE_WALL; i++) {
                 state = state.apply(go);
-                if (state.me().cooldown > 0) continue;
+                if (state.me.cooldown > 0) continue;
                 double cur = shootAgainstTheWallBestDistance(state, location);
                 if (cur < bestDistance) {
                     bestDistance = cur;
@@ -301,7 +301,7 @@ public class Solution {
     }
 
     private static double shootAgainstTheWallBestDistance(@NotNull State state, @NotNull Point location) {
-        PuckPosition puck = state.puck.strike(state.me(), 0);
+        PuckPosition puck = state.puck.strike(state.me, 0);
         double bestDistance = Double.MAX_VALUE;
         for (int i = 0; i < 70; i++) {
             puck = puck.move();
@@ -352,7 +352,7 @@ public class Solution {
 
         State state = current;
         for (int i = 0; i < 40; i++) {
-            Result move = makePassTo(state.me(), location);
+            Result move = makePassTo(state.me, location);
             if (move.action.type == ActionType.PASS) {
                 if (passSafety(move.action.passAngle) > MINIMUM_ALLOWED_PASS_SAFETY) return makePassTo(me, location);
             }
@@ -421,18 +421,18 @@ public class Solution {
         double best = Double.MAX_VALUE;
         // If I won't be going anywhere but rather will turn to the desired angle, will any enemy obtain the puck before me?
         for (int i = 0; i < 60; i++) {
-            Go go = finalAngleMatters ? Go.go(0, Util.normalize(desiredAngle - state.me().angle)) : Go.NOWHERE;
+            Go go = finalAngleMatters ? Go.go(0, Util.normalize(desiredAngle - state.me.angle)) : Go.NOWHERE;
             state = state.apply(go, Go.go(1, 0));
             for (HockeyistPosition enemy : state.enemies()) {
                 if (isReachable(enemy, state.puck)) return null;
             }
-            if (state.puck.distance(state.me()) >= Const.stickLength) continue;
+            if (state.puck.distance(state.me) >= Const.stickLength) continue;
             if (finalAngleMatters) {
-                if (abs(Util.normalize(state.me().angle - desiredAngle)) < 0.01 && abs(state.me().angleTo(state.puck)) < Const.stickSector / 2) {
+                if (abs(Util.normalize(state.me.angle - desiredAngle)) < 0.01 && abs(state.me.angleTo(state.puck)) < Const.stickSector / 2) {
                     return new Result(takeOrStrikePuckIfReachable(), Go.go(0, Util.normalize(desiredAngle - me.angle)));
                 }
             } else {
-                double cur = Util.normalize(Vec.of(state.me(), state.puck).angle() - me.angle);
+                double cur = Util.normalize(Vec.of(state.me, state.puck).angle() - me.angle);
                 if (abs(cur) < abs(best)) {
                     best = cur;
                 }
@@ -482,7 +482,7 @@ public class Solution {
         if (isReachable(me, puck)) {
             State nextTurn = current.applyWithCollisions(Go.NOWHERE);
             for (HockeyistPosition enemy : nextTurn.enemies()) {
-                if (isReachable(enemy, nextTurn.puck) || isReachable(enemy, nextTurn.me())) return Do.STRIKE;
+                if (isReachable(enemy, nextTurn.puck) || isReachable(enemy, nextTurn.me)) return Do.STRIKE;
             }
         }
 
@@ -501,21 +501,21 @@ public class Solution {
         for (int i = 0; i < Const.swingActionCooldownTicks; i++) {
             state = state.apply(Go.NOWHERE);
         }
-        return (isReachable(state.me(), state.puck) && permissionToShoot(Const.swingActionCooldownTicks, state)) ||
+        return (isReachable(state.me, state.puck) && permissionToShoot(Const.swingActionCooldownTicks, state)) ||
                continueSwinging(state, Const.swingActionCooldownTicks);
     }
 
     private static boolean continueSwinging(@NotNull State state, int swingTicks) {
         for (int i = swingTicks; i < MAXIMUM_TICKS_TO_SWING; i++) {
             state = state.apply(Go.NOWHERE);
-            if (isReachable(state.me(), state.puck) && permissionToShoot(i, state)) return true;
+            if (isReachable(state.me, state.puck) && permissionToShoot(i, state)) return true;
         }
         return false;
     }
 
     private static boolean permissionToShoot(int swingTicks, @NotNull State state) {
-        return feasibleLocationToShoot(effectiveShotPower(swingTicks), state.me().direction(), state.goalieY, state.puck.point,
-                                       state.me(), state.overtimeNoGoalies()) &&
+        return feasibleLocationToShoot(effectiveShotPower(swingTicks), state.me.direction(), state.goalieY, state.puck.point,
+                                       state.me, state.overtimeNoGoalies()) &&
                angleDifferenceToOptimal(state) <= ALLOWED_ANGLE_DIFFERENCE_TO_SHOOT * (state.overtimeNoGoalies() ? 3 : 1);
     }
 
@@ -523,11 +523,11 @@ public class Solution {
         Point puck = state.puck.point;
         Point target = state.overtimeNoGoalies() ? Players.opponentGoalCenter : Players.opponentDistantGoalPoint(puck);
         Vec trajectory = Vec.of(puck, target);
-        return abs(state.me().angleTo(trajectory));
+        return abs(state.me.angleTo(trajectory));
     }
 
     private static boolean canScoreWithPass(@NotNull State state) {
-        HockeyistPosition me = state.me();
+        HockeyistPosition me = state.me;
         Point target = state.overtimeNoGoalies() ? Players.opponentGoalCenter : Players.opponentDistantGoalPoint(me.point);
         double passAngle = Vec.of(state.puck.point, target).angleTo(me.direction());
         if (abs(passAngle) >= Const.passSector / 2) return false;
@@ -573,12 +573,12 @@ public class Solution {
                 State state = current;
                 for (int i = 0; i < 60 && i < bestFirstTickToReach; i++) {
                     state = state.apply(i < ticks ? go : Go.NOWHERE, puckOwnerDirection);
-                    if (isReachable(state.me(), state.puck)) {
+                    if (isReachable(state.me, state.puck)) {
                         bestFirstTickToReach = i;
                         bestGo = go;
                         break;
                     } else if (bestFirstTickToReach == Integer.MAX_VALUE) {
-                        double cur = Util.puckBindingPoint(state.me()).distance(state.puck.point);
+                        double cur = Util.puckBindingPoint(state.me).distance(state.puck.point);
                         if (cur < bestDistance) {
                             bestDistance = cur;
                             bestGo = go;
@@ -685,10 +685,10 @@ public class Solution {
             for (int i = 0; i < fullBack; i++) {
                 state = state.apply(Go.go(-1, 0));
             }
-            while (state.me().velocity.length() > 0.1) {
-                state = state.apply(Go.go(0, Util.normalize(angle - state.me().angle)));
+            while (state.me.velocity.length() > 0.1) {
+                state = state.apply(Go.go(0, Util.normalize(angle - state.me.angle)));
             }
-            if (state.me().distance(target) < 20) {
+            if (state.me.distance(target) < 20) {
                 return new Result(hitEnemyIfReachable(), fullBack > 0 ? Go.go(-1, 0) : Go.go(0, Util.normalize(angle - me.angle)));
             }
         }

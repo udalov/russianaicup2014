@@ -79,7 +79,7 @@ public class MyRenderer {
         Hockeyist puckOwner = findPuckOwner();
         if (puckOwner == null || puckOwner.getPlayerId() != Players.me.getId()) return;
 
-        HockeyistPosition me = State.of(puckOwner, world).me();
+        HockeyistPosition me = State.of(puckOwner, world).me;
 
         save();
         for (int x = (int) Static.CENTER.x + 2; x <= Const.rinkRight; x += 4) {
