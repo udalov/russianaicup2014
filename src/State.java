@@ -3,10 +3,7 @@ import model.HockeyistState;
 import model.HockeyistType;
 import model.World;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 
 import static java.lang.StrictMath.max;
 import static java.lang.StrictMath.min;
@@ -75,16 +72,33 @@ public class State {
     }
 
     @NotNull
-    private Iterable<HockeyistPosition> filterTeam(boolean allies) {
-        // TODO: optimize
-        long myPlayerId = Players.me.getId();
-        List<HockeyistPosition> result = new ArrayList<>(3);
-        for (HockeyistPosition position : pos) {
-            if ((position.hockeyist.getPlayerId() == myPlayerId) == allies) {
-                result.add(position);
+    private Iterable<HockeyistPosition> filterTeam(final boolean allies) {
+        final Iterator<HockeyistPosition> iterator = new Iterator<HockeyistPosition>() {
+            private int i = 0;
+
+            @Override
+            public boolean hasNext() {
+                while (i < pos.length && (pos[i].hockeyist.isTeammate() != allies)) i++;
+                return i < pos.length;
             }
-        }
-        return result;
+
+            @Override
+            public HockeyistPosition next() {
+                return pos[i++];
+            }
+
+            @Override
+            public void remove() {
+                throw new UnsupportedOperationException();
+            }
+        };
+        return new Iterable<HockeyistPosition>() {
+            @NotNull
+            @Override
+            public Iterator<HockeyistPosition> iterator() {
+                return iterator;
+            }
+        };
     }
 
     private static final double[] SPEEDUPS = {1, -1, -0.5, 0.5, 0};
