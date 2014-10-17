@@ -215,10 +215,10 @@ public class Solution {
 
     @Nullable
     private static Result prepareForVolley(@NotNull State current) {
-        for (int ticks = 5; ticks <= 15; ticks += 5) {
+        for (int ticks = 5; ticks <= 40; ticks += 5) {
             for (Go go : current.iteratePossibleMoves(4)) {
                 State state = current;
-                for (int i = 0; i < 60; i++) {
+                for (int i = 0; i < 70; i++) {
                     state = state.apply(i < ticks ? go : Go.NOWHERE);
                     int swingTicks = i - ticks >= 10 ? i - ticks : 0;
                     if (isReachable(state.me, state.puck) && permissionToShoot(swingTicks, state)) {
