@@ -49,7 +49,7 @@ fun runGame(vis: Boolean, ticks: Int, seed: Long, teamSize: Int, players: List<P
     var nextPort = 31001L
     for (player in players) {
         if (player == MyStrategy) {
-            val port = nextPort++
+            val port = nextPort.apply { nextPort += 1 }
             threads.add(Thread {
                 Thread.currentThread().name = if (vis) "local-vis" else "local"
                 val runnerClass = Class.forName("Runner")
@@ -60,7 +60,7 @@ fun runGame(vis: Boolean, ticks: Int, seed: Long, teamSize: Int, players: List<P
             })
         }
         else if (player == BootstrapStrategy) {
-            val port = nextPort++
+            val port = nextPort.apply { nextPort += 1 }
             val classLoader = URLClassLoader(arrayOf(File("out/bootstrap").toURI().toURL()), null)
             val runnerClass = classLoader.loadClass("Runner")!!
             threads.add(Thread {
